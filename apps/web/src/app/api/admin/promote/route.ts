@@ -97,10 +97,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Usuário não encontrado com este email.' }, { status: 404 })
     }
 
+    const target = targetProfile as { id: string; tenant_id: string }
+
     const { error: insertErr } = await (service as any).from('user_roles').insert({
-      user_id: targetProfile.id,
+      user_id: target.id,
       role_id: roleId,
-      tenant_id: targetProfile.tenant_id,
+      tenant_id: target.tenant_id,
       unit_id: null,
       granted_by: callerId,
       is_active: true,
