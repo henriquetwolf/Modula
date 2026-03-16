@@ -1,6 +1,6 @@
 'use client'
 
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, Controller, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useState } from 'react'
@@ -67,18 +67,7 @@ const INTERESTS: Record<string, { value: string; label: string }[]> = {
   ],
 }
 
-type FormData = {
-  course: string
-  institution_name: string
-  institution_type: string
-  course_name: string
-  current_semester: number
-  total_semesters: number
-  shift: string
-  areas_of_interest: string[]
-}
-
-const formSchema: z.ZodType<FormData> = z.object({
+const formSchema = z.object({
   course: z.string().min(1, 'Selecione seu curso'),
   institution_name: z.string().min(2, 'Informe sua instituição'),
   institution_type: z.string().min(1, 'Selecione o tipo'),
@@ -88,6 +77,8 @@ const formSchema: z.ZodType<FormData> = z.object({
   shift: z.string().min(1, 'Selecione o turno'),
   areas_of_interest: z.array(z.string()).default([]),
 })
+
+type FormData = z.infer<typeof formSchema>
 
 export default function StudentOnboardingPage() {
   const router = useRouter()
@@ -105,7 +96,7 @@ export default function StudentOnboardingPage() {
     setValue,
     formState: { errors },
   } = useForm<FormData>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as unknown as Resolver<FormData>,
     defaultValues: {
       course: '',
       institution_name: '',

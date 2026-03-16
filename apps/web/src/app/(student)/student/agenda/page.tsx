@@ -93,14 +93,16 @@ export default function AgendaPage() {
 
   async function createEvent() {
     if (!form.title || !form.event_date) return
-    const { error } = await supabase.from('academic_events').insert({
+    const payload = {
       title: form.title,
       event_type: form.event_type,
       event_date: form.event_date,
       start_time: form.start_time || null,
       end_time: form.end_time || null,
       description: form.description || null,
-    })
+    }
+    // academic_events existe no DB; tipos gerados podem não incluir a tabela
+    const { error } = await (supabase as any).from('academic_events').insert(payload)
     if (!error) {
       setForm({ title: '', event_type: 'exam', event_date: '', start_time: '', end_time: '', description: '' })
       setDialogOpen(false)

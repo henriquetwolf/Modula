@@ -110,7 +110,7 @@ export default function FlashcardsPage() {
 
   async function createDeck() {
     if (!deckForm.title) return
-    const { error } = await supabase.from('flashcard_decks').insert({
+    const { error } = await (supabase as any).from('flashcard_decks').insert({
       title: deckForm.title,
       description: deckForm.description || null,
       card_count: 0,
@@ -125,7 +125,7 @@ export default function FlashcardsPage() {
   async function createCard() {
     if (!cardForm.front || !cardForm.back || !selectedDeck) return
     const nextReview = new Date().toISOString()
-    const { error } = await supabase.from('flashcards').insert({
+    const { error } = await (supabase as any).from('flashcards').insert({
       deck_id: selectedDeck,
       front: cardForm.front,
       back: cardForm.back,
@@ -136,7 +136,7 @@ export default function FlashcardsPage() {
       review_count: 0,
     })
     if (!error) {
-      await supabase.from('flashcard_decks')
+      await (supabase as any).from('flashcard_decks')
         .update({ card_count: cards.length + 1 })
         .eq('id', selectedDeck)
       setCardForm({ front: '', back: '' })
@@ -151,7 +151,7 @@ export default function FlashcardsPage() {
     if (!card) return
 
     const updates = sm2(card, quality)
-    await supabase.from('flashcards')
+    await (supabase as any).from('flashcards')
       .update(updates)
       .eq('id', card.id)
 
@@ -166,7 +166,7 @@ export default function FlashcardsPage() {
   }
 
   async function deleteDeck(id: string) {
-    await supabase.from('flashcard_decks').delete().eq('id', id)
+    await (supabase as any).from('flashcard_decks').delete().eq('id', id)
     if (selectedDeck === id) {
       setSelectedDeck(null)
       setCards([])

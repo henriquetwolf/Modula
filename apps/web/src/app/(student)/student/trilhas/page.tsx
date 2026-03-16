@@ -63,7 +63,7 @@ export default function TracksPage() {
   useEffect(() => { loadData() }, [loadData])
 
   async function enroll(trackId: string) {
-    const { error } = await supabase.from('study_track_enrollments').insert({
+    const { error } = await (supabase as any).from('study_track_enrollments').insert({
       track_id: trackId,
       progress_percent: 0,
       status: 'active',

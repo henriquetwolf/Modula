@@ -48,7 +48,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Perfil não encontrado.' }, { status: 404 })
     }
 
-    const { data: platformAdminRole } = await service
+    const callerId = (callerProfile as { id: string }).id
+
+    const { data: platformAdminRole } = await (service as any)
       .from('roles')
       .select('id')
       .eq('name', 'platform_admin')
@@ -60,11 +62,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Role platform_admin não encontrada.' }, { status: 500 })
     }
 
-    const { data: callerHasAdmin } = await service
+    const roleId = (platformAdminRole as { id: string }).id
+
+    const { data: callerHasAdmin } = await (service as any)
       .from('user_roles')
       .select('id')
-      .eq('user_id', callerProfile.id)
-      .eq('role_id', platformAdminRole.id)
+      .eq('user_id', callerId)
+      .eq('role_id', roleId)
       .eq('is_active', true)
       .limit(1)
       .maybeSingle()
@@ -93,12 +97,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Usuário não encontrado com este email.' }, { status: 404 })
     }
 
-    const { error: insertErr } = await service.from('user_roles').insert({
+    const { error: insertErr } = await (service as any).from('user_roles').insert({
       user_id: targetProfile.id,
-      role_id: platformAdminRole.id,
+      role_id: roleId,
       tenant_id: targetProfile.tenant_id,
       unit_id: null,
-      granted_by: callerProfile.id,
+      granted_by: callerId,
       is_active: true,
     })
 

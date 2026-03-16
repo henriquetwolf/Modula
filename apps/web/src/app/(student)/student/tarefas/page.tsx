@@ -46,7 +46,7 @@ export default function TasksPage() {
 
   async function createTask() {
     if (!newTitle.trim()) return
-    await supabase.from('student_tasks').insert({
+    await (supabase as any).from('student_tasks').insert({
       title: newTitle.trim(),
       is_completed: false,
       priority: newPriority,
@@ -56,12 +56,12 @@ export default function TasksPage() {
   }
 
   async function toggleTask(id: string, completed: boolean) {
-    await supabase.from('student_tasks').update({ is_completed: !completed }).eq('id', id)
+    await (supabase as any).from('student_tasks').update({ is_completed: !completed }).eq('id', id)
     loadTasks()
   }
 
   async function deleteTask(id: string) {
-    await supabase.from('student_tasks').delete().eq('id', id)
+    await (supabase as any).from('student_tasks').delete().eq('id', id)
     loadTasks()
   }
 

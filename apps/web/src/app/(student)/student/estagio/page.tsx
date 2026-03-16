@@ -92,7 +92,7 @@ export default function InternshipPage() {
 
   async function createRecord() {
     if (!recordForm.site_name || !recordForm.start_date) return
-    const { error } = await supabase.from('internship_records').insert({
+    const { error } = await (supabase as any).from('internship_records').insert({
       site_name: recordForm.site_name,
       site_type: recordForm.site_type,
       start_date: recordForm.start_date,
@@ -109,7 +109,7 @@ export default function InternshipPage() {
 
   async function createEntry() {
     if (!entryForm.title || !entryForm.activities || !selectedRecord) return
-    const { error } = await supabase.from('internship_entries').insert({
+    const { error } = await (supabase as any).from('internship_entries').insert({
       record_id: selectedRecord,
       entry_date: entryForm.entry_date,
       hours: entryForm.hours,
@@ -119,7 +119,7 @@ export default function InternshipPage() {
     })
     if (!error) {
       const totalHours = entries.reduce((sum, e) => sum + e.hours, 0) + entryForm.hours
-      await supabase.from('internship_records')
+      await (supabase as any).from('internship_records')
         .update({ hours_completed: totalHours })
         .eq('id', selectedRecord)
       setEntryForm({ entry_date: new Date().toISOString().split('T')[0], hours: 4, title: '', activities: '', reflection: '' })

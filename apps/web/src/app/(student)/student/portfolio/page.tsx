@@ -97,7 +97,7 @@ export default function PortfolioPage() {
 
   async function createItem() {
     if (!form.title) return
-    const { error } = await supabase.from('portfolio_items').insert({
+    const { error } = await (supabase as any).from('portfolio_items').insert({
       title: form.title,
       item_type: form.item_type,
       description: form.description || null,
