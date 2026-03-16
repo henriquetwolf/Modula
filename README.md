@@ -25,7 +25,8 @@ O Modula Health e um **modular monolith evolutivo** que permite compra modular p
 | Mobile | React Native (Expo) + TypeScript |
 | Backend | Node.js + NestJS + TypeScript |
 | ORM | Drizzle ORM |
-| DB Principal | PostgreSQL 16 (RLS + JSONB + pgvector) |
+| Backend-as-a-Service | **Supabase** (Auth, DB, Storage, Realtime) |
+| DB Principal | PostgreSQL 16 via Supabase (RLS + JSONB + pgvector) |
 | Cache | Redis (Upstash) |
 | Event Bus | BullMQ (Redis-backed) |
 | AI/LLM | OpenAI GPT-4o + Anthropic (fallback) |

@@ -9,11 +9,11 @@
 | Mobile | React Native (Expo) + TypeScript | Code sharing com web, DX excelente |
 | Backend | Node.js + NestJS + TypeScript | Modular por design, decorators, DI |
 | ORM | Drizzle ORM | Type-safe, performante, migracao nativa |
-| DB Principal | PostgreSQL 16 (Neon ou Supabase) | RLS, JSONB, pgvector, confiavel |
+| DB Principal | **Supabase** (PostgreSQL 16) | RLS nativo, JSONB, pgvector, Auth, Storage, Realtime |
 | Cache | Redis (Upstash) | Sessions, cache, rate limiting |
 | Event Bus | BullMQ (Redis-backed) | Jobs, eventos async, retries |
-| Object Storage | Cloudflare R2 | Compativel S3, sem egress fees |
-| Auth | Better Auth ou Clerk | Multi-tenant auth, MFA, social login |
+| Object Storage | **Supabase Storage** (S3-compatible) | Integrado, RLS em buckets, CDN |
+| Auth | **Supabase Auth** | Multi-tenant auth, MFA, social login, RLS integrado |
 | Search | Meilisearch (Cloud) | Rapido, facil, typo-tolerant |
 | Feature Flags | Unleash (self-hosted) | OSS, granular, API |
 | Payments | Stripe + Asaas (BR) | Internacional + PIX nativo |
@@ -30,21 +30,137 @@
 
 ---
 
-## 2. Data Strategy
+## 2. Supabase — Plataforma de Backend
 
-### 2.1 PostgreSQL — Banco Principal
+O Supabase e a camada central de infraestrutura do Modula Health, substituindo multiplos servicos por uma plataforma unificada.
 
-#### Multi-tenant com Row-Level Security
+### 2.0 Servicos Supabase Utilizados
+
+| Servico | Uso no Modula Health |
+|---------|---------------------|
+| **Database (PostgreSQL 16)** | Banco principal com RLS, JSONB, pgvector |
+| **Auth** | Autenticacao multi-tenant, MFA, social login, JWT |
+| **Storage** | Upload de documentos, fotos, anexos (RLS por bucket) |
+| **Realtime** | Notificacoes live, atualizacoes de dashboard |
+| **Edge Functions** | Webhooks, integracao WhatsApp, processamento async |
+| **pg_cron** | Jobs agendados (lembretes, relatorios, limpeza) |
+| **pgvector** | Embeddings para RAG e AI Suite |
+
+### Configuracao de Ambiente
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://cfouqzgwdvmoafvfsnvd.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>   # client-side (RLS protege)
+SUPABASE_SERVICE_ROLE_KEY=<service-key>     # server-side only
+DATABASE_URL=<pooler-url>:6543/postgres     # Drizzle ORM (transaction mode)
+DIRECT_URL=<direct-url>:5432/postgres       # Migracao (session mode)
+```
+
+### Clients TypeScript
+
+```typescript
+// Client-side (browser) — respeita RLS via JWT do usuario
+import { createBrowserClient } from '@supabase/ssr'
+
+export const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+// Server-side (API routes, server components) — respeita RLS do usuario
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+
+export async function createSupabaseServer() {
+  const cookieStore = await cookies()
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => cookieStore.getAll(),
+        setAll: (cookiesToSet) => {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+}
+
+// Admin (service role) — bypassa RLS, usar apenas no backend
+import { createClient } from '@supabase/supabase-js'
+
+export const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+```
+
+### Estrategia de Auth + Multi-tenant
+
+```sql
+-- O tenant_id e injetado no JWT como custom claim via hook
+CREATE OR REPLACE FUNCTION public.custom_access_token_hook(event jsonb)
+RETURNS jsonb LANGUAGE plpgsql AS $$
+DECLARE
+  user_tenant_id uuid;
+BEGIN
+  SELECT tenant_id INTO user_tenant_id
+  FROM public.user_profiles
+  WHERE auth_user_id = (event->>'user_id')::uuid;
+
+  event := jsonb_set(
+    event,
+    '{claims,tenant_id}',
+    to_jsonb(user_tenant_id)
+  );
+  RETURN event;
+END;
+$$;
+
+-- RLS usa auth.jwt() para pegar o tenant_id automaticamente
+CREATE POLICY tenant_isolation ON evaluations
+  USING (tenant_id = (auth.jwt()->>'tenant_id')::uuid);
+```
+
+### Storage com RLS
+
+```sql
+-- Bucket por tipo de arquivo
+INSERT INTO storage.buckets (id, name, public)
+VALUES
+  ('avatars', 'avatars', true),
+  ('documents', 'documents', false),
+  ('evaluations', 'evaluations', false);
+
+-- RLS: usuario so acessa arquivos do seu tenant
+CREATE POLICY "tenant_docs" ON storage.objects
+  FOR ALL USING (
+    bucket_id = 'documents'
+    AND (storage.foldername(name))[1] = (auth.jwt()->>'tenant_id')
+  );
+```
+
+---
+
+## 3. Data Strategy
+
+### 3.1 PostgreSQL (via Supabase) — Banco Principal
+
+#### Multi-tenant com Row-Level Security (via Supabase Auth)
 
 ```sql
 -- Toda tabela de dados tem tenant_id
 ALTER TABLE evaluations ENABLE ROW LEVEL SECURITY;
 
+-- RLS integrado com JWT do Supabase Auth
 CREATE POLICY tenant_isolation ON evaluations
-    USING (tenant_id = current_setting('app.current_tenant')::UUID);
+    USING (tenant_id = (auth.jwt()->>'tenant_id')::uuid);
 
--- Setar tenant no inicio de cada request
-SET LOCAL app.current_tenant = '<tenant-uuid>';
+-- Para conexoes diretas (Drizzle migrations, admin scripts):
+-- SET LOCAL app.current_tenant = '<tenant-uuid>';
 ```
 
 #### Indices e Performance
@@ -93,7 +209,7 @@ CREATE INDEX idx_embeddings_vector ON embeddings
     USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
 ```
 
-### 2.2 Redis — Cache e Sessions
+### 3.2 Redis — Cache e Sessions
 
 | Uso | TTL | Chave |
 |-----|-----|-------|
@@ -104,7 +220,7 @@ CREATE INDEX idx_embeddings_vector ON embeddings
 | Rate limiting | Sliding window | `rate:{key}:{window}` |
 | Cache de queries | 1-5min | `cache:{queryHash}` |
 
-### 2.3 Meilisearch — Full-text Search
+### 3.3 Meilisearch — Full-text Search
 
 | Indice | Campos | Uso |
 |--------|--------|-----|
@@ -126,7 +242,7 @@ CREATE INDEX idx_embeddings_vector ON embeddings
 
 ---
 
-## 3. Monorepo Structure
+## 4. Monorepo Structure
 
 ```
 modula-health/
@@ -291,7 +407,7 @@ modula-health/
 
 ---
 
-## 4. API Strategy
+## 5. API Strategy
 
 ### 4.1 Abordagem Hibrida
 
@@ -386,7 +502,7 @@ export class TenantMiddleware implements NestMiddleware {
 
 ---
 
-## 5. Event Bus Architecture
+## 6. Event Bus Architecture
 
 ### 5.1 BullMQ Configuration
 
@@ -455,7 +571,7 @@ export class NotificationEventHandler {
 
 ---
 
-## 6. Testing Strategy
+## 7. Testing Strategy
 
 ### 6.1 Piramide de Testes
 
@@ -510,7 +626,7 @@ describe('Module Contract: ef.training -> ef.evaluation', () => {
 
 ---
 
-## 7. Database Migrations
+## 8. Database Migrations
 
 ### 7.1 Drizzle Kit
 
@@ -563,7 +679,7 @@ tools/migrations/
 
 ---
 
-## 8. Observability
+## 9. Observability
 
 ### 8.1 Logging
 
@@ -610,7 +726,7 @@ Sentry.setUser({
 
 ---
 
-## 9. Security Checklist
+## 10. Security Checklist
 
 - [ ] RLS ativado em todas as tabelas com `tenant_id`
 - [ ] Testes automatizados de isolamento de tenant
