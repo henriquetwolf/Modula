@@ -10,6 +10,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@hookform/resolvers": "latest",
     "@modula/supabase": "workspace:*",
     "@radix-ui/react-avatar": "latest",
     "@radix-ui/react-dialog": "latest",
@@ -22,6 +23,8 @@
     "@radix-ui/react-tabs": "latest",
     "@radix-ui/react-toast": "latest",
     "@radix-ui/react-tooltip": "latest",
+    "@supabase/ssr": "^0.9.0",
+    "@supabase/supabase-js": "^2.99.2",
     "@tanstack/react-query": "latest",
     "class-variance-authority": "latest",
     "clsx": "latest",
@@ -31,13 +34,13 @@
     "react": "latest",
     "react-dom": "latest",
     "react-hook-form": "latest",
-    "@hookform/resolvers": "latest",
     "tailwind-merge": "latest",
     "tailwindcss-animate": "latest",
     "zod": "latest",
     "zustand": "latest"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.1",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
