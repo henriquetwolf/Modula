@@ -15,14 +15,12 @@ interface Track {
   area: string
   difficulty: string
   estimated_hours: number
-  module_count: number
-  is_published: boolean
+  is_active: boolean
 }
 
 interface Enrollment {
   track_id: string
   progress_percent: number
-  status: string
 }
 
 const DIFFICULTY_LABELS: Record<string, string> = {
@@ -52,21 +50,40 @@ export default function TracksPage() {
 
   const loadData = useCallback(async () => {
     const [tracksRes, enrollRes] = await Promise.all([
-      supabase.from('study_tracks').select('*').eq('is_published', true).order('sort_order'),
-      supabase.from('study_track_enrollments').select('track_id, progress_percent, status'),
+      (supabase as any).from('study_tracks').select('*').eq('is_active', true).order('sort_order'),
+      (supabase as any).from('study_track_enrollments').select('track_id, progress_pct'),
     ])
     if (tracksRes.data) setTracks(tracksRes.data as Track[])
-    if (enrollRes.data) setEnrollments(enrollRes.data as Enrollment[])
+    if (enrollRes.data) {
+      setEnrollments(
+        (enrollRes.data as { track_id: string; progress_pct: number }[]).map(e => ({
+          track_id: e.track_id,
+          progress_percent: Number(e.progress_pct) || 0,
+        }))
+      )
+    }
     setLoading(false)
   }, [supabase])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function enroll(trackId: string) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('id, tenant_id')
+      .eq('auth_user_id', user.id)
+      .single()
+    if (!profile) return
+
+    const profileData = profile as { id: string; tenant_id: string }
     const { error } = await (supabase as any).from('study_track_enrollments').insert({
       track_id: trackId,
-      progress_percent: 0,
-      status: 'active',
+      tenant_id: profileData.tenant_id,
+      user_id: profileData.id,
+      progress_pct: 0,
     })
     if (!error) loadData()
   }
@@ -158,7 +175,6 @@ export default function TracksPage() {
                   )}
                   <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
                     <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {track.estimated_hours}h</span>
-                    <span className="flex items-center gap-1"><BookOpen className="h-3 w-3" /> {track.module_count} módulos</span>
                   </div>
                   <Button variant="outline" size="sm" className="w-full" onClick={() => enroll(track.id)}>
                     Iniciar trilha
