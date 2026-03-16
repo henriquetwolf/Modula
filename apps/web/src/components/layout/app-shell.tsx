@@ -161,6 +161,8 @@ const NAV_SECTIONS: SidebarNavSection[] = [
   {
     title: 'Configurações',
     items: [
+      { label: 'Equipe', href: '/configuracoes/equipe', icon: Users },
+      { label: 'Níveis de Acesso', href: '/configuracoes/acessos', icon: ShieldCheck },
       { label: 'Plano & Módulos', href: '/billing', icon: CreditCard },
       { label: 'Configurações', href: '/configuracoes', icon: Settings },
     ],
@@ -186,6 +188,10 @@ const PAGE_TITLES: Record<string, string> = {
   '/audit': 'Auditoria',
   '/billing': 'Plano & Módulos',
   '/configuracoes': 'Configurações',
+  '/configuracoes/equipe': 'Equipe',
+  '/configuracoes/equipe/convidar': 'Convidar Profissional',
+  '/configuracoes/acessos': 'Níveis de Acesso',
+  '/configuracoes/acessos/novo': 'Novo Nível de Acesso',
   '/notifications': 'Notificações',
   '/fisio/evaluation': 'Avaliação Fisioterapêutica',
   '/fisio/treatment': 'Plano Terapêutico',
@@ -218,7 +224,8 @@ const PAGE_TITLES: Record<string, string> = {
 }
 
 function getPageTitle(pathname: string): string {
-  for (const [path, title] of Object.entries(PAGE_TITLES)) {
+  const sorted = Object.entries(PAGE_TITLES).sort((a, b) => b[0].length - a[0].length)
+  for (const [path, title] of sorted) {
     if (pathname === path || pathname.startsWith(path + '/')) {
       return title
     }

@@ -20,7 +20,8 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/utils'
-import { User, Building2, MapPin, Bell } from 'lucide-react'
+import { User, Building2, MapPin, Bell, Users, ShieldCheck } from 'lucide-react'
+import Link from 'next/link'
 
 const UNIT_TYPES = [
   { value: 'estudio', label: 'Estúdio' },
@@ -184,6 +185,35 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Link href="/configuracoes/equipe">
+          <Card className="cursor-pointer transition-colors hover:bg-muted/50">
+            <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <Users className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-base">Equipe</CardTitle>
+                <CardDescription>Gerencie profissionais e colaboradores</CardDescription>
+              </div>
+            </CardHeader>
+          </Card>
+        </Link>
+        <Link href="/configuracoes/acessos">
+          <Card className="cursor-pointer transition-colors hover:bg-muted/50">
+            <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-base">Niveis de Acesso</CardTitle>
+                <CardDescription>Configure permissoes e niveis de acesso</CardDescription>
+              </div>
+            </CardHeader>
+          </Card>
+        </Link>
+      </div>
+
       <Tabs defaultValue="perfil" className="space-y-6">
         <TabsList className="grid w-full max-w-md grid-cols-4">
           <TabsTrigger value="perfil" className="gap-2">
