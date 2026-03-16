@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Modula Health — Portal do Cliente</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--primary:#0F766E;--primary-light:#14B8A6;--primary-50:#F0FDFA;--primary-100:#CCFBF1;--secondary:#6366F1;--secondary-50:#EEF2FF;--accent:#F59E0B;--accent-50:#FFFBEB;--success:#22C55E;--success-50:#F0FDF4;--warning:#F97316;--warning-50:#FFF7ED;--error:#EF4444;--error-50:#FEF2F2;--bg:#F8FAFC;--surface:#FFF;--surface-alt:#F1F5F9;--text-primary:#0F172A;--text-secondary:#64748B;--text-muted:#94A3B8;--border:#E2E8F0;--border-light:#F1F5F9;--ai-purple:#8B5CF6;--shadow-sm:0 1px 2px rgba(0,0,0,.05);--shadow-md:0 4px 6px -1px rgba(0,0,0,.07),0 2px 4px -2px rgba(0,0,0,.05);--shadow-lg:0 10px 15px -3px rgba(0,0,0,.08);--radius:16px;--radius-sm:12px;--radius-xs:8px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text-primary);max-width:430px;margin:0 auto;min-height:100vh;padding-bottom:80px;position:relative}
+
+.mobile-header{background:var(--surface);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;border-bottom:1px solid var(--border-light)}
+.brand{display:flex;align-items:center;gap:8px}
+.brand-logo{width:30px;height:30px;background:linear-gradient(135deg,#8B5CF6,#14B8A6);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:13px}
+.brand-name{font-size:14px;font-weight:700;color:var(--text-primary)}.brand-name span{color:var(--primary-light)}
+.header-right{display:flex;gap:8px}
+.h-btn{width:36px;height:36px;border-radius:50%;border:none;background:var(--surface-alt);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;position:relative}
+.h-btn .dot{position:absolute;top:2px;right:2px;width:8px;height:8px;background:var(--error);border-radius:50%;border:2px solid #fff}
+
+.page{padding:20px}
+
+.welcome-card{background:linear-gradient(135deg,var(--primary),var(--primary-dark,#0D5F58));border-radius:var(--radius);padding:24px;color:#fff;margin-bottom:20px;position:relative;overflow:hidden}
+.welcome-card::after{content:'';position:absolute;right:-20px;top:-20px;width:120px;height:120px;background:rgba(255,255,255,.06);border-radius:50%}
+.welcome-card::before{content:'';position:absolute;right:30px;bottom:-30px;width:80px;height:80px;background:rgba(255,255,255,.04);border-radius:50%}
+.w-greeting{font-size:20px;font-weight:700;margin-bottom:4px}
+.w-sub{font-size:13px;opacity:.75;margin-bottom:16px}
+.w-next{background:rgba(255,255,255,.15);border-radius:var(--radius-xs);padding:14px 16px;display:flex;align-items:center;gap:14px;backdrop-filter:blur(4px)}
+.w-next-icon{width:44px;height:44px;background:rgba(255,255,255,.2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.w-next-info{flex:1}
+.w-next-title{font-size:13px;font-weight:600}.w-next-detail{font-size:12px;opacity:.7;margin-top:2px}
+.w-next-time{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;background:rgba(255,255,255,.2);padding:4px 10px;border-radius:6px}
+
+.section-title{font-size:16px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+
+.workout-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:20px}
+.workout-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+.workout-title{font-size:15px;font-weight:700}.workout-sub{font-size:12px;color:var(--text-muted);margin-top:2px}
+.workout-badge{font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;background:var(--primary-50);color:var(--primary)}
+.exercise{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-light)}
+.exercise:last-child{border-bottom:none}
+.ex-num{width:28px;height:28px;border-radius:50%;background:var(--surface-alt);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text-muted);flex-shrink:0}
+.ex-info{flex:1}.ex-name{font-size:13px;font-weight:600}.ex-detail{font-size:11.5px;color:var(--text-muted);margin-top:1px}
+.ex-check{width:24px;height:24px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;flex-shrink:0}
+.ex-check.done{border-color:var(--success);background:var(--success);color:#fff;font-size:11px}
+.start-btn{width:100%;padding:14px;border:none;border-radius:var(--radius-xs);background:var(--primary);color:#fff;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:16px;transition:all .15s}
+.start-btn:hover{background:var(--primary-dark,#0D5F58)}
+
+.progress-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.prog-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;text-align:center}
+.prog-val{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700}
+.prog-label{font-size:11px;color:var(--text-muted);margin-top:2px}
+.prog-ring{width:64px;height:64px;margin:0 auto 8px;position:relative}
+.prog-ring svg{transform:rotate(-90deg)}
+.prog-ring-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700}
+
+.checkin-card{background:linear-gradient(135deg,rgba(139,92,246,.04),rgba(20,184,166,.04));border:1px solid rgba(139,92,246,.15);border-radius:var(--radius);padding:20px;margin-bottom:20px}
+.checkin-q{font-size:14px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.mood-row{display:flex;gap:10px;justify-content:center}
+.mood-btn{width:52px;height:52px;border-radius:50%;border:2px solid var(--border);background:var(--surface);cursor:pointer;font-size:24px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.mood-btn:hover,.mood-btn.selected{border-color:var(--primary);background:var(--primary-50);transform:scale(1.1)}
+
+.goals{margin-bottom:20px}
+.goal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:10px}
+.goal:last-child{margin-bottom:0}
+.goal-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.goal-name{font-size:13px;font-weight:600}.goal-pct{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--primary)}
+.goal-bar{height:8px;background:var(--surface-alt);border-radius:4px;overflow:hidden}
+.goal-fill{height:100%;border-radius:4px;transition:width .6s ease}
+
+.msg-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:20px;display:flex;gap:12px;align-items:flex-start}
+.msg-av{width:36px;height:36px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;flex-shrink:0}
+.msg-body{flex:1}.msg-from{font-size:12px;font-weight:600}.msg-text{font-size:12.5px;color:var(--text-secondary);margin-top:2px;line-height:1.4}.msg-time{font-size:11px;color:var(--text-muted);margin-top:4px}
+
+/* BOTTOM NAV */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--surface);border-top:1px solid var(--border);display:flex;padding:8px 0 calc(8px + env(safe-area-inset-bottom));z-index:100}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;cursor:pointer;transition:color .15s;color:var(--text-muted);text-decoration:none}
+.bnav-item.active{color:var(--primary)}
+.bnav-icon{font-size:20px;height:24px;display:flex;align-items:center;justify-content:center}
+.bnav-label{font-size:10px;font-weight:600}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.anim{animation:fadeUp .4s ease-out forwards;opacity:0}
+.d1{animation-delay:.04s}.d2{animation-delay:.08s}.d3{animation-delay:.12s}.d4{animation-delay:.16s}.d5{animation-delay:.2s}.d6{animation-delay:.24s}
+</style>
+</head>
+<body>
+
+<header class="mobile-header">
+  <div class="brand">
+    <div class="brand-logo">M</div>
+    <div class="brand-name">Studio <span>Vita</span></div>
+  </div>
+  <div class="header-right">
+    <button class="h-btn">💬<span class="dot"></span></button>
+    <button class="h-btn">🔔</button>
+  </div>
+</header>
+
+<div class="page">
+  <!-- WELCOME -->
+  <div class="welcome-card anim d1">
+    <div class="w-greeting">Olá, Carla! 👋</div>
+    <div class="w-sub">Você está no dia 84 da sua jornada</div>
+    <div class="w-next">
+      <div class="w-next-icon">🏋️</div>
+      <div class="w-next-info">
+        <div class="w-next-title">Próximo treino com Rafael</div>
+        <div class="w-next-detail">Treino B — Costas/Bíceps</div>
+      </div>
+      <div class="w-next-time">09:00</div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-row anim d2">
+    <div class="prog-card">
+      <div class="prog-ring">
+        <svg width="64" height="64" viewBox="0 0 64 64">
+          <circle cx="32" cy="32" r="28" fill="none" stroke="#F1F5F9" stroke-width="6"/>
+          <circle cx="32" cy="32" r="28" fill="none" stroke="#0F766E" stroke-width="6" stroke-linecap="round" stroke-dasharray="176" stroke-dashoffset="28"/>
+        </svg>
+        <div class="prog-ring-text">84%</div>
+      </div>
+      <div class="prog-label">Aderência semanal</div>
+    </div>
+    <div class="prog-card">
+      <div class="prog-ring">
+        <svg width="64" height="64" viewBox="0 0 64 64">
+          <circle cx="32" cy="32" r="28" fill="none" stroke="#F1F5F9" stroke-width="6"/>
+          <circle cx="32" cy="32" r="28" fill="none" stroke="#6366F1" stroke-width="6" stroke-linecap="round" stroke-dasharray="176" stroke-dashoffset="70"/>
+        </svg>
+        <div class="prog-ring-text" style="color:var(--secondary)">5/8</div>
+      </div>
+      <div class="prog-label">Treinos esta semana</div>
+    </div>
+  </div>
+
+  <!-- CHECKIN -->
+  <div class="checkin-card anim d3">
+    <div class="checkin-q">✨ Como você está se sentindo hoje?</div>
+    <div class="mood-row">
+      <button class="mood-btn">😫</button>
+      <button class="mood-btn">😕</button>
+      <button class="mood-btn selected">😊</button>
+      <button class="mood-btn">💪</button>
+      <button class="mood-btn">🔥</button>
+    </div>
+  </div>
+
+  <!-- WORKOUT -->
+  <div class="section-title anim d4">🏋️ Treino de Hoje</div>
+  <div class="workout-card anim d4">
+    <div class="workout-header">
+      <div>
+        <div class="workout-title">Treino B — Costas / Bíceps</div>
+        <div class="workout-sub">6 exercícios · ~55 min · Intermediário</div>
+      </div>
+      <span class="workout-badge">Semana 12</span>
+    </div>
+    <div class="exercise">
+      <div class="ex-num">1</div>
+      <div class="ex-info"><div class="ex-name">Puxada Frontal</div><div class="ex-detail">4×12 · 60kg · 90s descanso</div></div>
+      <div class="ex-check done">✓</div>
+    </div>
+    <div class="exercise">
+      <div class="ex-num">2</div>
+      <div class="ex-info"><div class="ex-name">Remada Curvada</div><div class="ex-detail">4×10 · 40kg · 90s descanso</div></div>
+      <div class="ex-check done">✓</div>
+    </div>
+    <div class="exercise">
+      <div class="ex-num">3</div>
+      <div class="ex-info"><div class="ex-name">Remada Unilateral</div><div class="ex-detail">3×12 · 22kg · 60s descanso</div></div>
+      <div class="ex-check"></div>
+    </div>
+    <div class="exercise">
+      <div class="ex-num">4</div>
+      <div class="ex-info"><div class="ex-name">Rosca Direta</div><div class="ex-detail">3×12 · 14kg · 60s descanso</div></div>
+      <div class="ex-check"></div>
+    </div>
+    <div class="exercise">
+      <div class="ex-num">5</div>
+      <div class="ex-info"><div class="ex-name">Rosca Martelo</div><div class="ex-detail">3×12 · 12kg · 60s descanso</div></div>
+      <div class="ex-check"></div>
+    </div>
+    <div class="exercise">
+      <div class="ex-num">6</div>
+      <div class="ex-info"><div class="ex-name">Rosca Scott</div><div class="ex-detail">3×15 · 8kg · 45s descanso</div></div>
+      <div class="ex-check"></div>
+    </div>
+    <button class="start-btn">▶ Continuar Treino</button>
+  </div>
+
+  <!-- GOALS -->
+  <div class="section-title anim d5">🎯 Minhas Metas</div>
+  <div class="goals anim d5">
+    <div class="goal">
+      <div class="goal-top"><span class="goal-name">Peso: 65kg → 60kg</span><span class="goal-pct">60%</span></div>
+      <div class="goal-bar"><div class="goal-fill" style="width:60%;background:var(--primary)"></div></div>
+    </div>
+    <div class="goal">
+      <div class="goal-top"><span class="goal-name">Treinos/semana: 5x</span><span class="goal-pct">62%</span></div>
+      <div class="goal-bar"><div class="goal-fill" style="width:62%;background:var(--secondary)"></div></div>
+    </div>
+    <div class="goal">
+      <div class="goal-top"><span class="goal-name">Água: 2L/dia</span><span class="goal-pct">85%</span></div>
+      <div class="goal-bar"><div class="goal-fill" style="width:85%;background:var(--accent)"></div></div>
+    </div>
+  </div>
+
+  <!-- MESSAGE -->
+  <div class="section-title anim d6">💬 Mensagens</div>
+  <div class="msg-card anim d6">
+    <div class="msg-av">RF</div>
+    <div class="msg-body">
+      <div class="msg-from">Rafael Ferreira</div>
+      <div class="msg-text">Carla, ótima evolução nas cargas! Vou preparar uma progressão para a próxima semana. Continue assim 💪</div>
+      <div class="msg-time">Hoje, 08:15</div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <a class="bnav-item active"><div class="bnav-icon">🏠</div><div class="bnav-label">Home</div></a>
+  <a class="bnav-item"><div class="bnav-icon">📅</div><div class="bnav-label">Agenda</div></a>
+  <a class="bnav-item"><div class="bnav-icon">🏋️</div><div class="bnav-label">Treino</div></a>
+  <a class="bnav-item"><div class="bnav-icon">📈</div><div class="bnav-label">Evolução</div></a>
+  <a class="bnav-item"><div class="bnav-icon">☰</div><div class="bnav-label">Mais</div></a>
+</nav>
+
+</body>
+</html>

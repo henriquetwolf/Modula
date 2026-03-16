@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modula Health — Admin Master</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --primary:#0F766E;--primary-light:#14B8A6;--primary-dark:#0D5F58;
+  --primary-50:#F0FDFA;--primary-100:#CCFBF1;
+  --secondary:#6366F1;--secondary-light:#818CF8;--secondary-50:#EEF2FF;
+  --accent:#F59E0B;--accent-50:#FFFBEB;
+  --success:#22C55E;--success-50:#F0FDF4;
+  --warning:#F97316;--warning-50:#FFF7ED;
+  --error:#EF4444;--error-50:#FEF2F2;
+  --bg:#F8FAFC;--surface:#FFF;--surface-alt:#F1F5F9;
+  --text-primary:#0F172A;--text-secondary:#64748B;--text-muted:#94A3B8;
+  --border:#E2E8F0;--border-light:#F1F5F9;
+  --sidebar-bg:#0F172A;--sidebar-hover:#1E293B;--sidebar-active:#7C3AED;
+  --admin-purple:#7C3AED;--admin-purple-light:#A78BFA;--admin-purple-50:#F5F3FF;
+  --ai-purple:#8B5CF6;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.05);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,.07),0 2px 4px -2px rgba(0,0,0,.05);
+  --shadow-lg:0 10px 15px -3px rgba(0,0,0,.08),0 4px 6px -4px rgba(0,0,0,.05);
+  --radius:12px;--radius-sm:8px;--radius-xs:6px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text-primary);display:flex;min-height:100vh}
+
+/* ═══ SIDEBAR ═══ */
+.sidebar{width:260px;background:var(--sidebar-bg);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.sidebar-header{padding:20px 20px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.06)}
+.logo-mark{width:36px;height:36px;background:linear-gradient(135deg,#7C3AED,#EC4899);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:14px;position:relative}
+.logo-mark::after{content:'🛡️';position:absolute;bottom:-3px;right:-3px;font-size:12px}
+.logo-text{color:#fff;font-size:17px;font-weight:700;letter-spacing:-.3px}
+.logo-text span{color:var(--admin-purple-light)}
+.logo-badge{font-size:9px;font-weight:700;background:var(--admin-purple);color:#fff;padding:2px 6px;border-radius:4px;margin-left:4px;letter-spacing:.5px;vertical-align:middle}
+
+.sidebar-nav{flex:1;padding:12px 10px;overflow-y:auto}
+.nav-section{margin-bottom:4px}
+.nav-label{font-size:10px;font-weight:600;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1.2px;padding:10px 12px 6px}
+.nav-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:var(--radius-sm);color:rgba(255,255,255,.55);font-size:13.5px;font-weight:500;cursor:pointer;transition:all .15s;margin-bottom:1px}
+.nav-item:hover{background:var(--sidebar-hover);color:rgba(255,255,255,.9)}
+.nav-item.active{background:var(--sidebar-active);color:#fff;font-weight:600}
+.nav-icon{width:20px;text-align:center;font-size:15px;flex-shrink:0}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;min-width:20px;text-align:center}
+.nav-badge.red{background:var(--error);color:#fff}
+.nav-badge.purple{background:var(--admin-purple);color:#fff}
+.nav-badge.orange{background:var(--warning);color:#fff}
+.nav-badge.green{background:var(--success);color:#fff}
+
+.sidebar-footer{padding:12px 10px;border-top:1px solid rgba(255,255,255,.06)}
+.user-card{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--radius-sm);cursor:pointer}
+.user-card:hover{background:var(--sidebar-hover)}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#7C3AED,#EC4899);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px}
+.user-name{color:#fff;font-size:13px;font-weight:600}
+.user-role{color:rgba(255,255,255,.4);font-size:11px}
+
+/* ═══ MAIN ═══ */
+.main{margin-left:260px;flex:1;min-height:100vh}
+
+/* ═══ TOP BAR ═══ */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;height:60px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:50}
+.search-wrap{flex:1;max-width:480px;position:relative}
+.search-wrap input{width:100%;padding:9px 14px 9px 38px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--surface-alt);outline:none;color:var(--text-primary);transition:all .15s}
+.search-wrap input::placeholder{color:var(--text-muted)}
+.search-wrap input:focus{border-color:var(--admin-purple-light);background:#fff;box-shadow:0 0 0 3px rgba(124,58,237,.08)}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:14px}
+.topbar-right{display:flex;align-items:center;gap:6px;margin-left:auto}
+.top-btn{height:38px;border-radius:var(--radius-sm);border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--text-secondary);transition:all .15s;padding:0 10px;position:relative}
+.top-btn:hover{background:var(--surface-alt);color:var(--text-primary)}
+.top-btn .notif-dot{position:absolute;top:6px;right:6px;width:8px;height:8px;background:var(--error);border-radius:50%;border:2px solid #fff}
+.env-badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:var(--radius-xs);background:#FEF2F2;color:#DC2626;border:1px solid #FECACA;letter-spacing:.3px}
+
+/* ═══ PAGE ═══ */
+.page{padding:28px 32px 48px;max-width:1500px}
+.page-header{margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end}
+.greeting{font-size:26px;font-weight:700;letter-spacing:-.5px}
+.greeting-sub{font-size:14px;color:var(--text-secondary);margin-top:4px}
+.greeting-sub b{color:var(--admin-purple);font-weight:600}
+.header-actions{display:flex;gap:8px}
+.h-btn{padding:8px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text-secondary);transition:all .15s;display:flex;align-items:center;gap:6px}
+.h-btn:hover{border-color:var(--admin-purple-light);color:var(--admin-purple)}
+.h-btn.primary{background:var(--admin-purple);color:#fff;border-color:var(--admin-purple)}
+.h-btn.primary:hover{background:#6D28D9}
+
+/* ═══ KPIs ═══ */
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:22px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;transition:all .2s;position:relative;overflow:hidden}
+.kpi:hover{box-shadow:var(--shadow-md);border-color:rgba(124,58,237,.25)}
+.kpi-label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.kpi-val{font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:600;letter-spacing:-1px}
+.kpi-trend{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;margin-top:6px;padding:2px 8px;border-radius:20px}
+.kpi-trend.up{color:#16A34A;background:var(--success-50)}
+.kpi-trend.down{color:var(--error);background:var(--error-50)}
+.kpi-trend.neutral{color:var(--text-muted);background:var(--surface-alt)}
+.kpi-bar{height:3px;background:var(--surface-alt);border-radius:2px;margin-top:10px;overflow:hidden}
+.kpi-bar-fill{height:100%;border-radius:2px;transition:width .8s ease}
+.kpi-icon{position:absolute;top:14px;right:16px;width:32px;height:32px;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;font-size:16px}
+
+/* ═══ TENANT DRILL-DOWN ═══ */
+.tenant-drill{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:22px;display:flex;align-items:flex-start;gap:20px}
+.td-search{width:320px;flex-shrink:0}
+.td-search label{font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px}
+.td-search select{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--surface);color:var(--text-primary);cursor:pointer;outline:none}
+.td-search select:focus{border-color:var(--admin-purple-light);box-shadow:0 0 0 3px rgba(124,58,237,.08)}
+.td-card{flex:1;display:flex;gap:24px;padding:16px 20px;background:var(--admin-purple-50);border:1px solid rgba(124,58,237,.15);border-radius:var(--radius-sm);min-height:80px}
+.td-card.empty{align-items:center;justify-content:center;color:var(--text-muted);font-size:13px;font-style:italic}
+.td-field{min-width:0}
+.td-field-label{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.td-field-val{font-size:14px;font-weight:600;color:var(--text-primary)}
+.td-field-val.mono{font-family:'JetBrains Mono',monospace}
+.td-modules{display:flex;gap:4px;flex-wrap:wrap;margin-top:2px}
+.td-mod{font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:var(--primary-100);color:var(--primary-dark)}
+.td-mod.ai{background:rgba(139,92,246,.15);color:#6D28D9}
+.td-status{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px}
+.td-status.active{background:var(--success-50);color:#16A34A}
+.td-status.trial{background:var(--warning-50);color:#C2410C}
+.td-status.past-due{background:var(--error-50);color:var(--error)}
+
+/* ═══ GRID ═══ */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-bottom:22px}
+.grid-main{display:grid;grid-template-columns:1fr 400px;gap:22px}
+
+/* ═══ CARD ═══ */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:22px}
+.card:last-child{margin-bottom:0}
+.card-head{padding:18px 22px 0;display:flex;align-items:center;justify-content:space-between}
+.card-t{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+.card-a{font-size:12.5px;color:var(--admin-purple);font-weight:600;cursor:pointer;text-decoration:none}
+.card-a:hover{text-decoration:underline}
+.card-b{padding:14px 22px 22px}
+.chart-wrap{position:relative;height:240px}
+
+/* ═══ TABLE ═══ */
+.data-table{width:100%;border-collapse:collapse}
+.data-table th{font-size:10.5px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;padding:8px 0;border-bottom:1px solid var(--border);text-align:left}
+.data-table th:last-child{text-align:right}
+.data-table td{padding:10px 0;border-bottom:1px solid var(--border-light);font-size:13px;vertical-align:middle}
+.data-table td:last-child{text-align:right}
+.data-table tr:last-child td{border-bottom:none}
+.tenant-name{display:flex;align-items:center;gap:10px}
+.tenant-av{width:30px;height:30px;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.tenant-info{min-width:0}
+.tenant-n{font-weight:600;font-size:13px}
+.tenant-s{font-size:11px;color:var(--text-muted)}
+.plan-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px}
+.plan-badge.starter{background:var(--surface-alt);color:var(--text-secondary)}
+.plan-badge.pro{background:var(--admin-purple-50);color:var(--admin-purple)}
+.plan-badge.enterprise{background:linear-gradient(135deg,rgba(124,58,237,.1),rgba(236,72,153,.1));color:#9333EA}
+.mono{font-family:'JetBrains Mono',monospace}
+
+/* ═══ MODULE ADOPTION ═══ */
+.mod-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border-light)}
+.mod-row:last-child{border-bottom:none}
+.mod-name{font-size:12.5px;font-weight:600;min-width:120px}
+.mod-bar-track{flex:1;height:22px;background:var(--surface-alt);border-radius:6px;overflow:hidden;position:relative}
+.mod-bar-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding-left:8px;transition:width .6s ease}
+.mod-bar-fill span{font-size:10px;font-weight:700;color:#fff}
+.mod-pct{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;min-width:40px;text-align:right}
+
+/* ═══ AI MONITOR ═══ */
+.ai-stat-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-light)}
+.ai-stat-row:last-child{border-bottom:none}
+.ai-stat-label{font-size:12.5px;color:var(--text-secondary);display:flex;align-items:center;gap:6px}
+.ai-stat-val{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600}
+.ai-model{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-light)}
+.ai-model:last-child{border-bottom:none}
+.ai-model-name{font-size:12.5px;font-weight:600;flex:1}
+.ai-model-reqs{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-secondary)}
+.ai-model-cost{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600}
+
+/* ═══ HEALTH STATUS ═══ */
+.health-item{display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--border-light)}
+.health-item:last-child{border-bottom:none}
+.health-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.health-dot.green{background:var(--success)}
+.health-dot.yellow{background:var(--warning)}
+.health-dot.red{background:var(--error)}
+.health-info{flex:1}
+.health-name{font-size:13px;font-weight:600}
+.health-desc{font-size:11.5px;color:var(--text-muted)}
+.health-val{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600}
+
+/* ═══ TICKETS ═══ */
+.ticket{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-light)}
+.ticket:last-child{border-bottom:none}
+.ticket-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.ticket-info{flex:1;min-width:0}
+.ticket-title{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ticket-meta{font-size:11px;color:var(--text-muted)}
+.ticket-sla{font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:4px}
+.ticket-sla.ok{background:var(--success-50);color:#16A34A}
+.ticket-sla.warn{background:var(--warning-50);color:#C2410C}
+.ticket-sla.breach{background:var(--error-50);color:var(--error)}
+
+/* ═══ ALERTS ═══ */
+.alrt{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);margin-bottom:8px;font-size:12.5px;line-height:1.45}
+.alrt:last-child{margin-bottom:0}
+.alrt.err{background:var(--error-50);color:#991B1B}
+.alrt.wrn{background:var(--warning-50);color:#9A3412}
+.alrt.inf{background:var(--secondary-50);color:#3730A3}
+.alrt.crit{background:linear-gradient(135deg,#FEF2F2,#FFF1F2);color:#881337;border:1px solid #FECDD3}
+.alrt strong{font-weight:600}
+.alrt-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+.alrt-time{font-size:10px;color:inherit;opacity:.6;margin-left:auto;white-space:nowrap;flex-shrink:0}
+
+/* ═══ ANIMATIONS ═══ */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.anim{animation:fadeUp .45s ease-out forwards;opacity:0}
+.d1{animation-delay:.03s}.d2{animation-delay:.06s}.d3{animation-delay:.09s}
+.d4{animation-delay:.12s}.d5{animation-delay:.15s}.d6{animation-delay:.18s}
+.d7{animation-delay:.21s}.d8{animation-delay:.24s}
+
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="logo-mark">M</div>
+    <div class="logo-text">Modula <span>Health</span> <span class="logo-badge">ADMIN</span></div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section">
+      <div class="nav-label">Plataforma</div>
+      <a class="nav-item active"><span class="nav-icon">📊</span> Dashboard</a>
+      <a class="nav-item"><span class="nav-icon">🏢</span> Tenants <span class="nav-badge green">142</span></a>
+      <a class="nav-item"><span class="nav-icon">🧩</span> Módulos & Features</a>
+      <a class="nav-item"><span class="nav-icon">💳</span> Billing & Revenue <span class="nav-badge red">3</span></a>
+      <a class="nav-item"><span class="nav-icon">👥</span> Usuários</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Operações</div>
+      <a class="nav-item"><span class="nav-icon">🤖</span> AI & LLM <span class="nav-badge purple">$2.1k</span></a>
+      <a class="nav-item"><span class="nav-icon">🖥️</span> Infraestrutura</a>
+      <a class="nav-item"><span class="nav-icon">🎫</span> Suporte <span class="nav-badge orange">8</span></a>
+      <a class="nav-item"><span class="nav-icon">📝</span> Audit Log</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Configurações</div>
+      <a class="nav-item"><span class="nav-icon">📦</span> Planos & Bundles</a>
+      <a class="nav-item"><span class="nav-icon">🚩</span> Feature Flags</a>
+      <a class="nav-item"><span class="nav-icon">🔑</span> API Keys</a>
+      <a class="nav-item"><span class="nav-icon">⚙️</span> Configurações</a>
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-avatar">SA</div>
+      <div>
+        <div class="user-name">Super Admin</div>
+        <div class="user-role">admin@modulahealth.com</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<div class="main">
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input placeholder="Buscar tenants, usuários, logs, módulos...">
+    </div>
+    <div class="topbar-right">
+      <span class="env-badge">🔴 PRODUCTION</span>
+      <button class="top-btn">🔔<span class="notif-dot"></span></button>
+      <button class="top-btn">🛡️</button>
+    </div>
+  </header>
+
+  <div class="page">
+    <!-- HEADER -->
+    <div class="page-header anim d1">
+      <div>
+        <h1 class="greeting">Admin Master — Visão da Plataforma</h1>
+        <p class="greeting-sub">Modula Health SaaS · <b>142 tenants</b> · <b>3 planos</b> · Março 2026</p>
+      </div>
+      <div class="header-actions">
+        <button class="h-btn">📄 Exportar Relatório</button>
+        <button class="h-btn primary">+ Novo Tenant</button>
+      </div>
+    </div>
+
+    <!-- ═══ KPIs ═══ -->
+    <div class="kpis anim d2">
+      <div class="kpi">
+        <div class="kpi-label">MRR</div>
+        <div class="kpi-icon" style="background:var(--admin-purple-50)">💰</div>
+        <div class="kpi-val">R$ 186k</div>
+        <span class="kpi-trend up">↑ +14% vs fev</span>
+        <div class="kpi-bar"><div class="kpi-bar-fill" style="width:82%;background:var(--admin-purple)"></div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Tenants Ativos</div>
+        <div class="kpi-icon" style="background:var(--primary-50)">🏢</div>
+        <div class="kpi-val">142</div>
+        <span class="kpi-trend up">↑ +11 este mês</span>
+        <div class="kpi-bar"><div class="kpi-bar-fill" style="width:71%;background:var(--primary)"></div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Usuários Totais</div>
+        <div class="kpi-icon" style="background:var(--secondary-50)">👥</div>
+        <div class="kpi-val">4.287</div>
+        <span class="kpi-trend up">↑ +342 este mês</span>
+        <div class="kpi-bar"><div class="kpi-bar-fill" style="width:68%;background:var(--secondary)"></div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Churn Rate</div>
+        <div class="kpi-icon" style="background:var(--error-50)">📉</div>
+        <div class="kpi-val">2.8%</div>
+        <span class="kpi-trend down">↑ +0.3pp vs fev</span>
+        <div class="kpi-bar"><div class="kpi-bar-fill" style="width:28%;background:var(--error)"></div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">AI Tokens (mês)</div>
+        <div class="kpi-icon" style="background:rgba(139,92,246,.08)">🤖</div>
+        <div class="kpi-val">12.4M</div>
+        <span class="kpi-trend neutral">$2.1k custo</span>
+        <div class="kpi-bar"><div class="kpi-bar-fill" style="width:62%;background:var(--ai-purple)"></div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Uptime</div>
+        <div class="kpi-icon" style="background:var(--success-50)">✅</div>
+        <div class="kpi-val">99.97%</div>
+        <span class="kpi-trend up">0 incidentes</span>
+        <div class="kpi-bar"><div class="kpi-bar-fill" style="width:99.97%;background:var(--success)"></div></div>
+      </div>
+    </div>
+
+    <!-- ═══ TENANT DRILL-DOWN ═══ -->
+    <div class="tenant-drill anim d3">
+      <div class="td-search">
+        <label>🔎 Drill-down por Tenant</label>
+        <select id="tenantSelect" onchange="showTenant(this.value)">
+          <option value="">Selecione um tenant...</option>
+          <option value="vita">Studio Vita (Pro)</option>
+          <option value="corpore">Clínica Corpore Sano (Enterprise)</option>
+          <option value="rafael">Rafael Ferreira (Starter)</option>
+          <option value="move">MoveFit Academia (Pro)</option>
+          <option value="nutrivida">NutriVida Consultório (Starter)</option>
+        </select>
+      </div>
+      <div class="td-card empty" id="tenantCard">
+        Selecione um tenant para visualizar detalhes
+      </div>
+    </div>
+
+    <!-- ═══ CHARTS ═══ -->
+    <div class="grid-2 anim d4">
+      <div class="card">
+        <div class="card-head"><span class="card-t">💰 MRR por Plano</span><a class="card-a">Detalhes →</a></div>
+        <div class="card-b"><div class="chart-wrap"><canvas id="mrrChart"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-t">📈 Crescimento de Tenants</span><a class="card-a">Detalhes →</a></div>
+        <div class="card-b"><div class="chart-wrap"><canvas id="growthChart"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- ═══ BOTTOM GRID ═══ -->
+    <div class="grid-main">
+      <!-- LEFT COLUMN -->
+      <div>
+        <!-- TOP TENANTS -->
+        <div class="card anim d5">
+          <div class="card-head"><span class="card-t">🏆 Top Tenants por Receita</span><a class="card-a">Ver todos →</a></div>
+          <div class="card-b">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Tenant</th>
+                  <th>Plano</th>
+                  <th>Módulos</th>
+                  <th>Usuários</th>
+                  <th>MRR</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><div class="tenant-name"><div class="tenant-av" style="background:#6366F1">CS</div><div class="tenant-info"><div class="tenant-n">Clínica Corpore Sano</div><div class="tenant-s">3 unidades · São Paulo</div></div></div></td>
+                  <td><span class="plan-badge enterprise">Enterprise</span></td>
+                  <td><span class="mono" style="font-size:13px;font-weight:600">12</span></td>
+                  <td><span class="mono" style="font-size:13px">86</span></td>
+                  <td><span class="mono" style="font-size:14px;font-weight:700;color:var(--admin-purple)">R$ 4.890</span></td>
+                </tr>
+                <tr>
+                  <td><div class="tenant-name"><div class="tenant-av" style="background:#0F766E">SV</div><div class="tenant-info"><div class="tenant-n">Studio Vita</div><div class="tenant-s">2 unidades · Rio de Janeiro</div></div></div></td>
+                  <td><span class="plan-badge pro">Pro</span></td>
+                  <td><span class="mono" style="font-size:13px;font-weight:600">8</span></td>
+                  <td><span class="mono" style="font-size:13px">52</span></td>
+                  <td><span class="mono" style="font-size:14px;font-weight:700;color:var(--admin-purple)">R$ 2.490</span></td>
+                </tr>
+                <tr>
+                  <td><div class="tenant-name"><div class="tenant-av" style="background:#F59E0B">MF</div><div class="tenant-info"><div class="tenant-n">MoveFit Academia</div><div class="tenant-s">1 unidade · Curitiba</div></div></div></td>
+                  <td><span class="plan-badge pro">Pro</span></td>
+                  <td><span class="mono" style="font-size:13px;font-weight:600">7</span></td>
+                  <td><span class="mono" style="font-size:13px">38</span></td>
+                  <td><span class="mono" style="font-size:14px;font-weight:700;color:var(--admin-purple)">R$ 1.890</span></td>
+                </tr>
+                <tr>
+                  <td><div class="tenant-name"><div class="tenant-av" style="background:#EC4899">FP</div><div class="tenant-info"><div class="tenant-n">FisioPlus Centro</div><div class="tenant-s">1 unidade · Belo Horizonte</div></div></div></td>
+                  <td><span class="plan-badge pro">Pro</span></td>
+                  <td><span class="mono" style="font-size:13px;font-weight:600">6</span></td>
+                  <td><span class="mono" style="font-size:13px">24</span></td>
+                  <td><span class="mono" style="font-size:14px;font-weight:700;color:var(--admin-purple)">R$ 1.490</span></td>
+                </tr>
+                <tr>
+                  <td><div class="tenant-name"><div class="tenant-av" style="background:#22C55E">NV</div><div class="tenant-info"><div class="tenant-n">NutriVida Consultório</div><div class="tenant-s">1 unidade · Porto Alegre</div></div></div></td>
+                  <td><span class="plan-badge starter">Starter</span></td>
+                  <td><span class="mono" style="font-size:13px;font-weight:600">3</span></td>
+                  <td><span class="mono" style="font-size:13px">4</span></td>
+                  <td><span class="mono" style="font-size:14px;font-weight:700;color:var(--admin-purple)">R$ 197</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- MODULE ADOPTION -->
+        <div class="card anim d6">
+          <div class="card-head"><span class="card-t">🧩 Adoção de Módulos</span><a class="card-a">Feature Flags →</a></div>
+          <div class="card-b">
+            <div class="mod-row">
+              <div class="mod-name">Core</div>
+              <div class="mod-bar-track"><div class="mod-bar-fill" style="width:100%;background:var(--text-secondary)"><span>obrigatório</span></div></div>
+              <div class="mod-pct">100%</div>
+            </div>
+            <div class="mod-row">
+              <div class="mod-name">Agenda</div>
+              <div class="mod-bar-track"><div class="mod-bar-fill" style="width:92%;background:var(--primary)"><span>131</span></div></div>
+              <div class="mod-pct">92%</div>
+            </div>
+            <div class="mod-row">
+              <div class="mod-name">Financeiro</div>
+              <div class="mod-bar-track"><div class="mod-bar-fill" style="width:84%;background:var(--primary)"><span>119</span></div></div>
+              <div class="mod-pct">84%</div>
+            </div>
+            <div class="mod-row">
+              <div class="mod-name">Ed. Física</div>
+              <div class="mod-bar-track"><div class="mod-bar-fill" style="width:68%;background:var(--primary-light)"><span>97</span></div></div>
+              <div class="mod-pct">68%</div>
+            </div>
+            <div class="mod-row">
+              <div class="mod-name">Fisioterapia</div>
+              <div class="mod-bar-track"><div class="mod-bar-fill" style="width:45%;background:var(--secondary)"><span>64</span></div></div>
+              <div class="mod-pct">45%</div>
+            </div>
+            <div class="mod-row">
+              <div class="mod-name">Nutrição</div>
+              <div class="mod-bar-track"><div class="mod-bar-fill" style="width:38%;background:var(--accent)"><span>54</span></div></div>
+              <div class="mod-pct">38%</div>
+            </div>
+            <div class="mod-row">
+              <div class="mod-name">CRM</div>
+              <div class="mod-bar-track"><div class="mod-bar-fill" style="width:31%;background:var(--secondary-light)"><span>44</span></div></div>
+              <div class="mod-pct">31%</div>
+            </div>
+            <div class="mod-row">
+              <div class="mod-name">AI Copiloto</div>
+              <div class="mod-bar-track"><div class="mod-bar-fill" style="width:22%;background:var(--ai-purple)"><span>31</span></div></div>
+              <div class="mod-pct">22%</div>
+            </div>
+            <div class="mod-row">
+              <div class="mod-name">Comunicação</div>
+              <div class="mod-bar-track"><div class="mod-bar-fill" style="width:27%;background:#06B6D4"><span>38</span></div></div>
+              <div class="mod-pct">27%</div>
+            </div>
+            <div class="mod-row">
+              <div class="mod-name">Educação</div>
+              <div class="mod-bar-track"><div class="mod-bar-fill" style="width:12%;background:#EC4899"><span>17</span></div></div>
+              <div class="mod-pct">12%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div>
+        <!-- AI & LLM MONITOR -->
+        <div class="card anim d5">
+          <div class="card-head"><span class="card-t" style="color:var(--ai-purple)">🤖 AI & LLM Monitor</span></div>
+          <div class="card-b">
+            <div class="ai-stat-row">
+              <span class="ai-stat-label">📊 Tokens Consumidos</span>
+              <span class="ai-stat-val">12.4M</span>
+            </div>
+            <div class="ai-stat-row">
+              <span class="ai-stat-label">💰 Custo Total (mês)</span>
+              <span class="ai-stat-val" style="color:var(--admin-purple)">$2,142</span>
+            </div>
+            <div class="ai-stat-row">
+              <span class="ai-stat-label">🔄 Requests Totais</span>
+              <span class="ai-stat-val">48,291</span>
+            </div>
+            <div class="ai-stat-row">
+              <span class="ai-stat-label">🛡️ Guardrails Triggered</span>
+              <span class="ai-stat-val" style="color:var(--warning)">127</span>
+            </div>
+            <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+              <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Por Modelo</div>
+              <div class="ai-model">
+                <span style="font-size:14px">🟢</span>
+                <span class="ai-model-name">GPT-4o</span>
+                <span class="ai-model-reqs">31,204 reqs</span>
+                <span class="ai-model-cost">$1,428</span>
+              </div>
+              <div class="ai-model">
+                <span style="font-size:14px">🟣</span>
+                <span class="ai-model-name">Claude 3.5 Sonnet</span>
+                <span class="ai-model-reqs">12,847 reqs</span>
+                <span class="ai-model-cost">$592</span>
+              </div>
+              <div class="ai-model">
+                <span style="font-size:14px">🔵</span>
+                <span class="ai-model-name">GPT-4o-mini</span>
+                <span class="ai-model-reqs">4,240 reqs</span>
+                <span class="ai-model-cost">$122</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SYSTEM HEALTH -->
+        <div class="card anim d6">
+          <div class="card-head"><span class="card-t">🖥️ Saúde do Sistema</span></div>
+          <div class="card-b">
+            <div class="health-item">
+              <div class="health-dot green"></div>
+              <div class="health-info"><div class="health-name">API Principal</div><div class="health-desc">p99 latência</div></div>
+              <div class="health-val" style="color:var(--success)">142ms</div>
+            </div>
+            <div class="health-item">
+              <div class="health-dot green"></div>
+              <div class="health-info"><div class="health-name">PostgreSQL</div><div class="health-desc">Conexões ativas / pool</div></div>
+              <div class="health-val">47/200</div>
+            </div>
+            <div class="health-item">
+              <div class="health-dot green"></div>
+              <div class="health-info"><div class="health-name">Redis</div><div class="health-desc">Memória utilizada</div></div>
+              <div class="health-val">1.2GB</div>
+            </div>
+            <div class="health-item">
+              <div class="health-dot yellow"></div>
+              <div class="health-info"><div class="health-name">BullMQ (Filas)</div><div class="health-desc">Jobs pendentes</div></div>
+              <div class="health-val" style="color:var(--warning)">234</div>
+            </div>
+            <div class="health-item">
+              <div class="health-dot green"></div>
+              <div class="health-info"><div class="health-name">Error Rate (5min)</div><div class="health-desc">Erros 5xx / total</div></div>
+              <div class="health-val" style="color:var(--success)">0.02%</div>
+            </div>
+            <div class="health-item">
+              <div class="health-dot green"></div>
+              <div class="health-info"><div class="health-name">Storage (R2)</div><div class="health-desc">Espaço utilizado</div></div>
+              <div class="health-val">128GB</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUPPORT TICKETS -->
+        <div class="card anim d7">
+          <div class="card-head"><span class="card-t">🎫 Tickets de Suporte</span><a class="card-a">Ver todos →</a></div>
+          <div class="card-b">
+            <div style="display:flex;gap:16px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)">
+              <div style="text-align:center;flex:1"><div class="mono" style="font-size:22px;font-weight:700;color:var(--error)">8</div><div style="font-size:10px;color:var(--text-muted)">Abertos</div></div>
+              <div style="text-align:center;flex:1"><div class="mono" style="font-size:22px;font-weight:700;color:var(--warning)">5</div><div style="font-size:10px;color:var(--text-muted)">Em andamento</div></div>
+              <div style="text-align:center;flex:1"><div class="mono" style="font-size:22px;font-weight:700;color:var(--success)">34</div><div style="font-size:10px;color:var(--text-muted)">Resolvidos (mês)</div></div>
+            </div>
+            <div class="ticket">
+              <div class="ticket-icon" style="background:var(--error-50)">🔴</div>
+              <div class="ticket-info">
+                <div class="ticket-title">Erro ao gerar prescrição de treino — Studio Vita</div>
+                <div class="ticket-meta">Há 2h · Prioridade Alta</div>
+              </div>
+              <span class="ticket-sla warn">SLA 4h</span>
+            </div>
+            <div class="ticket">
+              <div class="ticket-icon" style="background:var(--warning-50)">🟡</div>
+              <div class="ticket-info">
+                <div class="ticket-title">Integração Stripe falhando — Clínica Corpore</div>
+                <div class="ticket-meta">Há 5h · Prioridade Alta</div>
+              </div>
+              <span class="ticket-sla breach">SLA Breach!</span>
+            </div>
+            <div class="ticket">
+              <div class="ticket-icon" style="background:var(--secondary-50)">🔵</div>
+              <div class="ticket-info">
+                <div class="ticket-title">Dúvida sobre relatório de avaliação — MoveFit</div>
+                <div class="ticket-meta">Há 1d · Prioridade Média</div>
+              </div>
+              <span class="ticket-sla ok">SLA OK</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ALERTS -->
+        <div class="card anim d8">
+          <div class="card-head"><span class="card-t">🚨 Alertas Críticos</span></div>
+          <div class="card-b">
+            <div class="alrt crit">
+              <span class="alrt-icon">💳</span>
+              <span><strong>3 tenants</strong> com pagamento falhado — R$4.577 em risco</span>
+              <span class="alrt-time">há 1h</span>
+            </div>
+            <div class="alrt err">
+              <span class="alrt-icon">🛡️</span>
+              <span>AI guardrail: <strong>tentativa de acesso</strong> a dados sensíveis via prompt — Tenant #89</span>
+              <span class="alrt-time">há 3h</span>
+            </div>
+            <div class="alrt wrn">
+              <span class="alrt-icon">📉</span>
+              <span>BullMQ com <strong>234 jobs pendentes</strong> — fila de notificações acima do normal</span>
+              <span class="alrt-time">há 15min</span>
+            </div>
+            <div class="alrt wrn">
+              <span class="alrt-icon">⏰</span>
+              <span><strong>SLA breach</strong> em ticket #1247 — Clínica Corpore Sano (Enterprise)</span>
+              <span class="alrt-time">há 5h</span>
+            </div>
+            <div class="alrt inf">
+              <span class="alrt-icon">📦</span>
+              <span><strong>14 tenants</strong> com trial expirando nos próximos 3 dias</span>
+              <span class="alrt-time">hoje</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SCRIPTS ═══════════════ -->
+<script>
+const months = ['Out','Nov','Dez','Jan','Fev','Mar'];
+
+// MRR Chart
+new Chart(document.getElementById('mrrChart'), {
+  type: 'bar',
+  data: {
+    labels: months,
+    datasets: [
+      { label: 'Enterprise', data: [42, 48, 52, 58, 62, 68], backgroundColor: '#7C3AED', borderRadius: 6 },
+      { label: 'Pro', data: [38, 42, 48, 52, 58, 72], backgroundColor: '#A78BFA', borderRadius: 6 },
+      { label: 'Starter', data: [18, 22, 26, 30, 36, 46], backgroundColor: '#DDD6FE', borderRadius: 6 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 16, font: { size: 11, family: 'Inter' } } } },
+    scales: {
+      x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11, family: 'Inter' } } },
+      y: { stacked: true, grid: { color: '#F1F5F9' }, ticks: { font: { size: 11, family: 'JetBrains Mono' }, callback: v => 'R$' + v + 'k' } }
+    }
+  }
+});
+
+// Growth Chart
+new Chart(document.getElementById('growthChart'), {
+  type: 'line',
+  data: {
+    labels: months,
+    datasets: [
+      {
+        label: 'Tenants Ativos',
+        data: [89, 98, 108, 118, 131, 142],
+        borderColor: '#7C3AED', backgroundColor: 'rgba(124,58,237,.06)',
+        fill: true, tension: .4, pointRadius: 5, pointBackgroundColor: '#7C3AED', borderWidth: 2.5
+      },
+      {
+        label: 'Novos/mês',
+        data: [12, 14, 16, 15, 18, 15],
+        borderColor: '#22C55E', backgroundColor: 'rgba(34,197,94,.06)',
+        fill: true, tension: .4, pointRadius: 4, pointBackgroundColor: '#22C55E', borderWidth: 2
+      },
+      {
+        label: 'Churn/mês',
+        data: [3, 5, 6, 5, 5, 4],
+        borderColor: '#EF4444', backgroundColor: 'rgba(239,68,68,.06)',
+        fill: true, tension: .4, pointRadius: 4, pointBackgroundColor: '#EF4444', borderWidth: 2, borderDash: [5, 5]
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 16, font: { size: 11, family: 'Inter' } } } },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 11, family: 'Inter' } } },
+      y: { grid: { color: '#F1F5F9' }, ticks: { font: { size: 11, family: 'JetBrains Mono' } }, min: 0 }
+    }
+  }
+});
+
+// Tenant Drill-Down Data
+const tenants = {
+  vita: { name: 'Studio Vita', plan: 'Pro', status: 'active', statusLabel: 'Ativo', mrr: 'R$ 2.490', users: '52 (7 profissionais)', modules: ['Core','Agenda','Financeiro','Ed. Física','Fisioterapia','Nutrição','CRM','AI Copiloto'], since: 'Jun 2025', units: '2 unidades' },
+  corpore: { name: 'Clínica Corpore Sano', plan: 'Enterprise', status: 'active', statusLabel: 'Ativo', mrr: 'R$ 4.890', users: '86 (12 profissionais)', modules: ['Core','Agenda','Financeiro','Ed. Física','Fisioterapia','Nutrição','CRM','Comunicação','AI Copiloto','Educação','Analytics','Care Path'], since: 'Mar 2025', units: '3 unidades' },
+  rafael: { name: 'Rafael Ferreira', plan: 'Starter', status: 'active', statusLabel: 'Ativo', mrr: 'R$ 197', users: '48 (1 profissional)', modules: ['Core','Agenda','Financeiro','Ed. Física'], since: 'Set 2025', units: '1 unidade' },
+  move: { name: 'MoveFit Academia', plan: 'Pro', status: 'trial', statusLabel: 'Trial (6 dias)', mrr: 'R$ 1.890', users: '38 (5 profissionais)', modules: ['Core','Agenda','Financeiro','Ed. Física','Fisioterapia','CRM','Comunicação'], since: 'Jan 2026', units: '1 unidade' },
+  nutrivida: { name: 'NutriVida Consultório', plan: 'Starter', status: 'past-due', statusLabel: 'Pagamento Atrasado', mrr: 'R$ 197', users: '4 (1 profissional)', modules: ['Core','Agenda','Nutrição'], since: 'Nov 2025', units: '1 unidade' }
+};
+
+function showTenant(key) {
+  const card = document.getElementById('tenantCard');
+  if (!key) {
+    card.className = 'td-card empty';
+    card.innerHTML = 'Selecione um tenant para visualizar detalhes';
+    return;
+  }
+  const t = tenants[key];
+  const mods = t.modules.map(m => `<span class="td-mod${m.includes('AI') ? ' ai' : ''}">${m}</span>`).join('');
+  card.className = 'td-card';
+  card.innerHTML = `
+    <div class="td-field"><div class="td-field-label">Tenant</div><div class="td-field-val">${t.name}</div></div>
+    <div class="td-field"><div class="td-field-label">Plano</div><div class="td-field-val"><span class="plan-badge ${t.plan.toLowerCase()}">${t.plan}</span></div></div>
+    <div class="td-field"><div class="td-field-label">Status</div><div class="td-field-val"><span class="td-status ${t.status}">${t.statusLabel}</span></div></div>
+    <div class="td-field"><div class="td-field-label">MRR</div><div class="td-field-val mono">${t.mrr}</div></div>
+    <div class="td-field"><div class="td-field-label">Usuários</div><div class="td-field-val">${t.users}</div></div>
+    <div class="td-field"><div class="td-field-label">Unidades</div><div class="td-field-val">${t.units}</div></div>
+    <div class="td-field"><div class="td-field-label">Cliente Desde</div><div class="td-field-val">${t.since}</div></div>
+    <div class="td-field" style="grid-column:span 2"><div class="td-field-label">Módulos Ativos (${t.modules.length})</div><div class="td-modules">${mods}</div></div>
+  `;
+  card.style.display = 'grid';
+  card.style.gridTemplateColumns = 'repeat(4, auto) 1fr';
+  card.style.rowGap = '12px';
+  card.style.columnGap = '24px';
+}
+</script>
+
+</body>
+</html>

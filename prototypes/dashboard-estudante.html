@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modula Health — Dashboard do Estudante</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--primary:#0F766E;--primary-light:#14B8A6;--primary-dark:#0D5F58;--primary-50:#F0FDFA;--primary-100:#CCFBF1;--secondary:#6366F1;--secondary-50:#EEF2FF;--accent:#F59E0B;--accent-50:#FFFBEB;--success:#22C55E;--success-50:#F0FDF4;--warning:#F97316;--warning-50:#FFF7ED;--error:#EF4444;--error-50:#FEF2F2;--bg:#F8FAFC;--surface:#FFF;--surface-alt:#F1F5F9;--text-primary:#0F172A;--text-secondary:#64748B;--text-muted:#94A3B8;--border:#E2E8F0;--border-light:#F1F5F9;--sidebar-bg:#0F172A;--sidebar-hover:#1E293B;--sidebar-active:#0F766E;--ai-purple:#8B5CF6;--shadow-sm:0 1px 2px rgba(0,0,0,.05);--shadow-md:0 4px 6px -1px rgba(0,0,0,.07),0 2px 4px -2px rgba(0,0,0,.05);--radius:12px;--radius-sm:8px;--radius-xs:6px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text-primary);display:flex;min-height:100vh}
+
+.sidebar{width:260px;background:var(--sidebar-bg);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.sidebar-header{padding:20px 20px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.06)}
+.logo-mark{width:36px;height:36px;background:linear-gradient(135deg,#8B5CF6,#14B8A6);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:16px}
+.logo-text{color:#fff;font-size:17px;font-weight:700}.logo-text span{color:var(--primary-light)}
+.sidebar-nav{flex:1;padding:12px 10px;overflow-y:auto}
+.nav-section{margin-bottom:4px}
+.nav-label{font-size:10px;font-weight:600;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1.2px;padding:10px 12px 6px}
+.nav-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:var(--radius-sm);color:rgba(255,255,255,.55);font-size:13.5px;font-weight:500;cursor:pointer;transition:all .15s;margin-bottom:1px}
+.nav-item:hover{background:var(--sidebar-hover);color:rgba(255,255,255,.9)}
+.nav-item.active{background:var(--sidebar-active);color:#fff;font-weight:600}
+.nav-icon{width:20px;text-align:center;font-size:15px;flex-shrink:0}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;min-width:20px;text-align:center}
+.nav-badge.purple{background:var(--ai-purple);color:#fff}.nav-badge.orange{background:var(--warning);color:#fff}.nav-badge.green{background:var(--success);color:#fff}
+.sidebar-footer{padding:12px 10px;border-top:1px solid rgba(255,255,255,.06)}
+.user-card{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--radius-sm);cursor:pointer}
+.user-card:hover{background:var(--sidebar-hover)}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:var(--secondary);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px}
+.user-name{color:#fff;font-size:13px;font-weight:600}.user-role{color:rgba(255,255,255,.4);font-size:11px}
+
+.main{margin-left:260px;flex:1;min-height:100vh}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;height:60px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:50}
+.search-wrap{flex:1;max-width:420px;position:relative}
+.search-wrap input{width:100%;padding:9px 14px 9px 38px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--surface-alt);outline:none;color:var(--text-primary)}
+.search-wrap input:focus{border-color:var(--primary-light);background:#fff;box-shadow:0 0 0 3px rgba(20,184,166,.08)}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:14px}
+.topbar-right{display:flex;align-items:center;gap:6px;margin-left:auto}
+.top-btn{height:38px;border-radius:var(--radius-sm);border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--text-secondary);transition:all .15s;padding:0 10px}
+.top-btn:hover{background:var(--surface-alt)}
+.ai-btn{background:linear-gradient(135deg,rgba(139,92,246,.08),rgba(20,184,166,.08));border:1px solid rgba(139,92,246,.18);color:var(--ai-purple);font-size:13px;font-weight:600;gap:6px;font-family:inherit;padding:0 14px}
+
+.page{padding:28px 32px 48px;max-width:1200px}
+.page-header{margin-bottom:26px}
+.greeting{font-size:26px;font-weight:700;letter-spacing:-.5px}
+.greeting-sub{font-size:14px;color:var(--text-secondary);margin-top:4px}
+.greeting-sub b{color:var(--primary);font-weight:600}
+
+.progress-banner{background:linear-gradient(135deg,var(--secondary),#4F46E5);border-radius:var(--radius);padding:24px 28px;color:#fff;margin-bottom:24px;display:flex;align-items:center;gap:24px}
+.pb-info{flex:1}
+.pb-title{font-size:16px;font-weight:700;margin-bottom:4px}
+.pb-sub{font-size:13px;opacity:.75;margin-bottom:12px}
+.pb-bar-track{height:10px;background:rgba(255,255,255,.2);border-radius:5px;overflow:hidden}
+.pb-bar-fill{height:100%;background:#fff;border-radius:5px;transition:width .8s ease}
+.pb-pct{font-family:'JetBrains Mono',monospace;font-size:42px;font-weight:700;opacity:.95}
+
+.grid{display:grid;grid-template-columns:1fr 380px;gap:24px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:24px}
+.card:last-child{margin-bottom:0}
+.card-head{padding:18px 22px 0;display:flex;align-items:center;justify-content:space-between}
+.card-t{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+.card-a{font-size:12.5px;color:var(--primary);font-weight:600;cursor:pointer}
+.card-b{padding:14px 22px 22px}
+
+.task{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border-light)}
+.task:last-child{border-bottom:none}
+.task-icon{width:38px;height:38px;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.task-info{flex:1;min-width:0}.task-name{font-size:13px;font-weight:600}.task-meta{font-size:11.5px;color:var(--text-muted);margin-top:1px}
+.task-status{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;white-space:nowrap}
+.task-status.due{background:var(--warning-50);color:#C2410C}
+.task-status.done{background:var(--success-50);color:#16A34A}
+.task-status.new{background:var(--secondary-50);color:#4338CA}
+
+.feedback-item{padding:14px 0;border-bottom:1px solid var(--border-light)}
+.feedback-item:last-child{border-bottom:none}
+.fb-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.fb-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:11px;flex-shrink:0}
+.fb-from{font-size:12px;font-weight:600}.fb-date{font-size:11px;color:var(--text-muted)}
+.fb-text{font-size:13px;color:var(--text-secondary);line-height:1.5;background:var(--surface-alt);padding:10px 14px;border-radius:var(--radius-xs)}
+.fb-stars{margin-top:6px;font-size:14px}
+
+.ai-tutor{border:1px solid rgba(139,92,246,.18);background:linear-gradient(135deg,rgba(139,92,246,.03),rgba(20,184,166,.03))}
+.tutor-chat{display:flex;flex-direction:column;gap:12px}
+.tutor-msg{max-width:90%;padding:12px 16px;border-radius:16px;font-size:13px;line-height:1.5}
+.tutor-msg.bot{background:var(--surface-alt);color:var(--text-primary);border-bottom-left-radius:4px;align-self:flex-start}
+.tutor-msg.user{background:var(--secondary);color:#fff;border-bottom-right-radius:4px;align-self:flex-end}
+.tutor-input{display:flex;gap:8px;margin-top:8px}
+.tutor-input input{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;outline:none}
+.tutor-input input:focus{border-color:var(--ai-purple)}
+.tutor-input button{padding:10px 18px;border:none;border-radius:var(--radius-sm);background:var(--ai-purple);color:#fff;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer}
+
+.portfolio-item{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border-light)}
+.portfolio-item:last-child{border-bottom:none}
+.pf-icon{width:40px;height:40px;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;font-size:18px}
+.pf-info{flex:1}.pf-name{font-size:13px;font-weight:600}.pf-meta{font-size:11.5px;color:var(--text-muted);margin-top:1px}
+.pf-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.anim{animation:fadeUp .45s ease-out forwards;opacity:0}
+.d1{animation-delay:.04s}.d2{animation-delay:.08s}.d3{animation-delay:.12s}.d4{animation-delay:.16s}.d5{animation-delay:.2s}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="logo-mark">M</div>
+    <div class="logo-text">Modula <span>Health</span></div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section">
+      <div class="nav-label">Estudante</div>
+      <a class="nav-item active"><span class="nav-icon">🏠</span> Dashboard</a>
+      <a class="nav-item"><span class="nav-icon">📚</span> Trilhas</a>
+      <a class="nav-item"><span class="nav-icon">🎓</span> Cursos</a>
+      <a class="nav-item"><span class="nav-icon">📝</span> Simulados <span class="nav-badge orange">2</span></a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Estágio</div>
+      <a class="nav-item"><span class="nav-icon">🏥</span> Diário de Estágio</a>
+      <a class="nav-item"><span class="nav-icon">👤</span> Supervisor</a>
+      <a class="nav-item"><span class="nav-icon">📋</span> Competências</a>
+      <a class="nav-item"><span class="nav-icon">📂</span> Portfólio <span class="nav-badge green">3</span></a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Ferramentas</div>
+      <a class="nav-item"><span class="nav-icon">✨</span> AI Tutor <span class="nav-badge purple">IA</span></a>
+      <a class="nav-item"><span class="nav-icon">🃏</span> Flashcards</a>
+      <a class="nav-item"><span class="nav-icon">💬</span> Fórum</a>
+      <a class="nav-item"><span class="nav-icon">📅</span> Cronograma</a>
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-avatar">GB</div>
+      <div>
+        <div class="user-name">Gabriel Braga</div>
+        <div class="user-role">Estudante · Fisioterapia · 7° período</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="main">
+  <header class="topbar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input placeholder="Buscar conteúdos, casos, exercícios...">
+    </div>
+    <div class="topbar-right">
+      <button class="top-btn ai-btn">✨ AI Tutor</button>
+      <button class="top-btn">🔔</button>
+    </div>
+  </header>
+
+  <div class="page">
+    <div class="page-header anim d1">
+      <h1 class="greeting">Olá, Gabriel! 📚</h1>
+      <p class="greeting-sub">7° período de Fisioterapia · Estágio em <b>Ortopedia</b> · Supervisor: Dra. Luísa Campos</p>
+    </div>
+
+    <!-- PROGRESS BANNER -->
+    <div class="progress-banner anim d2">
+      <div class="pb-info">
+        <div class="pb-title">Trilha: Fisioterapia Ortopédica</div>
+        <div class="pb-sub">12 de 18 módulos concluídos · Estimativa: 3 semanas restantes</div>
+        <div class="pb-bar-track"><div class="pb-bar-fill" style="width:67%"></div></div>
+      </div>
+      <div class="pb-pct">67%</div>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT -->
+      <div>
+        <!-- TASKS -->
+        <div class="card anim d3">
+          <div class="card-head"><span class="card-t">📋 Próximas Tarefas</span><a class="card-a">Ver todas →</a></div>
+          <div class="card-b">
+            <div class="task">
+              <div class="task-icon" style="background:var(--error-50)">📝</div>
+              <div class="task-info">
+                <div class="task-name">Relatório de Caso — Tendinopatia Patelar</div>
+                <div class="task-meta">Estágio Ortopedia · Vence amanhã</div>
+              </div>
+              <span class="task-status due">Vence amanhã</span>
+            </div>
+            <div class="task">
+              <div class="task-icon" style="background:var(--warning-50)">📝</div>
+              <div class="task-info">
+                <div class="task-name">Simulado — Testes Ortopédicos Especiais</div>
+                <div class="task-meta">30 questões · 45 min · Módulo 13</div>
+              </div>
+              <span class="task-status new">Disponível</span>
+            </div>
+            <div class="task">
+              <div class="task-icon" style="background:var(--secondary-50)">📖</div>
+              <div class="task-info">
+                <div class="task-name">Módulo 13 — Reabilitação de Joelho</div>
+                <div class="task-meta">4 aulas · 2h estimadas</div>
+              </div>
+              <span class="task-status new">Novo</span>
+            </div>
+            <div class="task">
+              <div class="task-icon" style="background:var(--success-50)">✅</div>
+              <div class="task-info">
+                <div class="task-name">Diário de Estágio — Semana 11</div>
+                <div class="task-meta">5 atendimentos registrados</div>
+              </div>
+              <span class="task-status done">Concluído</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- FEEDBACK -->
+        <div class="card anim d4">
+          <div class="card-head"><span class="card-t">💬 Feedback do Supervisor</span></div>
+          <div class="card-b">
+            <div class="feedback-item">
+              <div class="fb-header">
+                <div class="fb-av" style="background:var(--secondary)">LC</div>
+                <div><div class="fb-from">Dra. Luísa Campos</div><div class="fb-date">Hoje, 10:30</div></div>
+              </div>
+              <div class="fb-text">Gabriel, excelente evolução no raciocínio clínico do caso de tendinopatia. A correlação que você fez entre os achados do exame físico e o diagnóstico funcional foi muito pertinente. Sugiro aprofundar nos critérios de progressão de carga para o relatório final.</div>
+              <div class="fb-stars">⭐⭐⭐⭐⭐</div>
+            </div>
+            <div class="feedback-item">
+              <div class="fb-header">
+                <div class="fb-av" style="background:var(--primary)">TA</div>
+                <div><div class="fb-from">Prof. Thiago Alves</div><div class="fb-date">Sexta, 16:00</div></div>
+              </div>
+              <div class="fb-text">Bom desempenho no simulado de avaliação funcional. Ponto de atenção: revise os testes neurológicos de membro inferior — você errou 3 questões nessa área.</div>
+              <div class="fb-stars">⭐⭐⭐⭐</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div>
+        <!-- AI TUTOR -->
+        <div class="card ai-tutor anim d3">
+          <div class="card-head"><span class="card-t" style="color:var(--ai-purple)">✨ AI Tutor</span></div>
+          <div class="card-b">
+            <div class="tutor-chat">
+              <div class="tutor-msg bot">Olá Gabriel! Posso ajudar com dúvidas sobre os casos do estágio, explicar conceitos ou preparar simulados. O que precisa? 🎓</div>
+              <div class="tutor-msg user">Qual a diferença entre o teste de McMurray e Apley para menisco?</div>
+              <div class="tutor-msg bot"><strong>McMurray:</strong> Paciente em DD, flexão máxima do joelho → rotação + extensão. Positivo se estalo/dor.<br><br><strong>Apley:</strong> Paciente em DV, joelho 90° → compressão axial + rotação. Positivo se dor durante compressão.<br><br>A principal diferença é que o <strong>Apley diferencia</strong> lesão meniscal (dor na compressão) de lesão ligamentar (dor na distração). Quer que eu crie flashcards sobre testes de joelho?</div>
+            </div>
+            <div class="tutor-input">
+              <input placeholder="Pergunte ao AI Tutor...">
+              <button>Enviar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- PORTFOLIO -->
+        <div class="card anim d4">
+          <div class="card-head"><span class="card-t">📂 Meu Portfólio</span><a class="card-a">Ver completo →</a></div>
+          <div class="card-b">
+            <div class="portfolio-item">
+              <div class="pf-icon" style="background:var(--success-50)">📄</div>
+              <div class="pf-info">
+                <div class="pf-name">Caso: LCA — Pós-cirúrgico</div>
+                <div class="pf-meta">Avaliação + Conduta · Nota: 9.2</div>
+              </div>
+              <span class="pf-badge" style="background:var(--success-50);color:#16A34A">Aprovado</span>
+            </div>
+            <div class="portfolio-item">
+              <div class="pf-icon" style="background:var(--success-50)">📄</div>
+              <div class="pf-info">
+                <div class="pf-name">Caso: Lombalgia Crônica</div>
+                <div class="pf-meta">Evolução SOAP · Nota: 8.8</div>
+              </div>
+              <span class="pf-badge" style="background:var(--success-50);color:#16A34A">Aprovado</span>
+            </div>
+            <div class="portfolio-item">
+              <div class="pf-icon" style="background:var(--warning-50)">📝</div>
+              <div class="pf-info">
+                <div class="pf-name">Caso: Tendinopatia Patelar</div>
+                <div class="pf-meta">Em andamento · Rascunho</div>
+              </div>
+              <span class="pf-badge" style="background:var(--warning-50);color:#C2410C">Pendente</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- COMPETENCIES -->
+        <div class="card anim d5">
+          <div class="card-head"><span class="card-t">🎯 Competências</span></div>
+          <div class="card-b">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:600">Avaliação Clínica</span><span style="font-size:12px;font-weight:600;color:var(--primary)">85%</span></div>
+                <div style="height:8px;background:var(--surface-alt);border-radius:4px;overflow:hidden"><div style="width:85%;height:100%;background:var(--primary);border-radius:4px"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:600">Raciocínio Clínico</span><span style="font-size:12px;font-weight:600;color:var(--secondary)">72%</span></div>
+                <div style="height:8px;background:var(--surface-alt);border-radius:4px;overflow:hidden"><div style="width:72%;height:100%;background:var(--secondary);border-radius:4px"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:600">Condutas Terapêuticas</span><span style="font-size:12px;font-weight:600;color:var(--accent)">68%</span></div>
+                <div style="height:8px;background:var(--surface-alt);border-radius:4px;overflow:hidden"><div style="width:68%;height:100%;background:var(--accent);border-radius:4px"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:600">Documentação Clínica</span><span style="font-size:12px;font-weight:600;color:var(--success)">90%</span></div>
+                <div style="height:8px;background:var(--surface-alt);border-radius:4px;overflow:hidden"><div style="width:90%;height:100%;background:var(--success);border-radius:4px"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:600">Ética e Comunicação</span><span style="font-size:12px;font-weight:600;color:#EC4899">95%</span></div>
+                <div style="height:8px;background:var(--surface-alt);border-radius:4px;overflow:hidden"><div style="width:95%;height:100%;background:#EC4899;border-radius:4px"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

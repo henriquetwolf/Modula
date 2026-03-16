@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modula Health — Dashboard do Gestor</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+:root{--primary:#0F766E;--primary-light:#14B8A6;--primary-dark:#0D5F58;--primary-50:#F0FDFA;--primary-100:#CCFBF1;--secondary:#6366F1;--secondary-50:#EEF2FF;--accent:#F59E0B;--accent-50:#FFFBEB;--success:#22C55E;--success-50:#F0FDF4;--warning:#F97316;--warning-50:#FFF7ED;--error:#EF4444;--error-50:#FEF2F2;--bg:#F8FAFC;--surface:#FFF;--surface-alt:#F1F5F9;--text-primary:#0F172A;--text-secondary:#64748B;--text-muted:#94A3B8;--border:#E2E8F0;--border-light:#F1F5F9;--sidebar-bg:#0F172A;--sidebar-hover:#1E293B;--sidebar-active:#0F766E;--ai-purple:#8B5CF6;--shadow-sm:0 1px 2px rgba(0,0,0,.05);--shadow-md:0 4px 6px -1px rgba(0,0,0,.07),0 2px 4px -2px rgba(0,0,0,.05);--radius:12px;--radius-sm:8px;--radius-xs:6px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text-primary);display:flex;min-height:100vh}
+
+.sidebar{width:260px;background:var(--sidebar-bg);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.sidebar-header{padding:20px 20px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.06)}
+.logo-mark{width:36px;height:36px;background:linear-gradient(135deg,#8B5CF6,#14B8A6);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:16px}
+.logo-text{color:#fff;font-size:17px;font-weight:700;letter-spacing:-.3px}.logo-text span{color:var(--primary-light)}
+.sidebar-nav{flex:1;padding:12px 10px;overflow-y:auto}
+.nav-section{margin-bottom:4px}
+.nav-label{font-size:10px;font-weight:600;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1.2px;padding:10px 12px 6px}
+.nav-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:var(--radius-sm);color:rgba(255,255,255,.55);font-size:13.5px;font-weight:500;cursor:pointer;transition:all .15s;margin-bottom:1px}
+.nav-item:hover{background:var(--sidebar-hover);color:rgba(255,255,255,.9)}
+.nav-item.active{background:var(--sidebar-active);color:#fff;font-weight:600}
+.nav-icon{width:20px;text-align:center;font-size:15px;flex-shrink:0}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;min-width:20px;text-align:center}
+.nav-badge.red{background:var(--error);color:#fff}.nav-badge.purple{background:var(--ai-purple);color:#fff}.nav-badge.green{background:var(--success);color:#fff}
+.sidebar-footer{padding:12px 10px;border-top:1px solid rgba(255,255,255,.06)}
+.user-card{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--radius-sm);cursor:pointer}
+.user-card:hover{background:var(--sidebar-hover)}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px}
+.user-name{color:#fff;font-size:13px;font-weight:600}.user-role{color:rgba(255,255,255,.4);font-size:11px}
+
+.main{margin-left:260px;flex:1;min-height:100vh}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;height:60px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:50}
+.search-wrap{flex:1;max-width:420px;position:relative}
+.search-wrap input{width:100%;padding:9px 14px 9px 38px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--surface-alt);outline:none;color:var(--text-primary)}
+.search-wrap input:focus{border-color:var(--primary-light);background:#fff;box-shadow:0 0 0 3px rgba(20,184,166,.08)}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:14px}
+.topbar-right{display:flex;align-items:center;gap:6px;margin-left:auto}
+.top-btn{height:38px;border-radius:var(--radius-sm);border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--text-secondary);transition:all .15s;padding:0 10px;position:relative}
+.top-btn:hover{background:var(--surface-alt)}
+.top-btn .notif-dot{position:absolute;top:6px;right:6px;width:8px;height:8px;background:var(--error);border-radius:50%;border:2px solid #fff}
+
+.page{padding:28px 32px 48px;max-width:1400px}
+.page-header{margin-bottom:26px;display:flex;justify-content:space-between;align-items:flex-end}
+.greeting{font-size:26px;font-weight:700;letter-spacing:-.5px}
+.greeting-sub{font-size:14px;color:var(--text-secondary);margin-top:4px}
+.greeting-sub b{color:var(--primary);font-weight:600}
+.unit-switch{display:flex;gap:4px;background:var(--surface-alt);padding:3px;border-radius:var(--radius-sm)}
+.unit-btn{padding:6px 14px;border-radius:var(--radius-xs);border:none;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;background:transparent;color:var(--text-secondary);transition:all .15s}
+.unit-btn.active{background:var(--surface);color:var(--text-primary);box-shadow:var(--shadow-sm)}
+
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;transition:all .2s}
+.kpi:hover{box-shadow:var(--shadow-md);border-color:rgba(20,184,166,.3)}
+.kpi-label{font-size:11.5px;font-weight:500;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.kpi-val{font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:600;letter-spacing:-1px}
+.kpi-trend{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:600;margin-top:4px;padding:2px 8px;border-radius:20px}
+.kpi-trend.up{color:#16A34A;background:var(--success-50)}.kpi-trend.down{color:var(--error);background:var(--error-50)}.kpi-trend.neutral{color:var(--text-muted);background:var(--surface-alt)}
+.kpi-bar{height:4px;background:var(--surface-alt);border-radius:2px;margin-top:10px;overflow:hidden}
+.kpi-bar-fill{height:100%;border-radius:2px;transition:width .8s ease}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px}
+.grid-3{display:grid;grid-template-columns:1fr 380px;gap:24px}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:24px}
+.card:last-child{margin-bottom:0}
+.card-head{padding:18px 22px 0;display:flex;align-items:center;justify-content:space-between}
+.card-t{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+.card-a{font-size:12.5px;color:var(--primary);font-weight:600;cursor:pointer;text-decoration:none}
+.card-b{padding:14px 22px 22px}
+
+.chart-wrap{position:relative;height:240px}
+
+.team-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border-light)}
+.team-row:last-child{border-bottom:none}
+.team-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;flex-shrink:0}
+.team-info{flex:1;min-width:0}
+.team-name{font-size:13px;font-weight:600}.team-spec{font-size:11.5px;color:var(--text-muted)}
+.team-stat{text-align:right}
+.team-num{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:600}
+.team-sub{font-size:11px;color:var(--text-muted)}
+
+.funnel-stage{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-light)}
+.funnel-stage:last-child{border-bottom:none}
+.funnel-color{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.funnel-info{flex:1}
+.funnel-name{font-size:13px;font-weight:600}.funnel-sub{font-size:11px;color:var(--text-muted)}
+.funnel-val{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600}
+
+.ai-card{border:1px solid rgba(139,92,246,.18);background:linear-gradient(135deg,rgba(139,92,246,.02),rgba(20,184,166,.02))}
+.ai-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid rgba(139,92,246,.06)}
+.ai-item:last-child{border-bottom:none;padding-bottom:0}
+.ai-dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0;background:linear-gradient(135deg,#8B5CF6,#14B8A6)}
+.ai-text{font-size:13px;color:var(--text-secondary);line-height:1.55}.ai-text strong{color:var(--text-primary)}
+.ai-action{font-size:12px;color:var(--ai-purple);font-weight:600;cursor:pointer;margin-top:4px;display:inline-block}
+
+.alrt{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);margin-bottom:8px;font-size:12.5px;line-height:1.45}
+.alrt:last-child{margin-bottom:0}
+.alrt.err{background:var(--error-50);color:#991B1B}.alrt.wrn{background:var(--warning-50);color:#9A3412}.alrt.inf{background:var(--secondary-50);color:#3730A3}
+.alrt strong{font-weight:600}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.anim{animation:fadeUp .45s ease-out forwards;opacity:0}
+.d1{animation-delay:.04s}.d2{animation-delay:.08s}.d3{animation-delay:.12s}.d4{animation-delay:.16s}.d5{animation-delay:.2s}.d6{animation-delay:.24s}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="logo-mark">M</div>
+    <div class="logo-text">Modula <span>Health</span></div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section">
+      <div class="nav-label">Gestão</div>
+      <a class="nav-item active"><span class="nav-icon">🏠</span> Dashboard</a>
+      <a class="nav-item"><span class="nav-icon">📊</span> Analytics</a>
+      <a class="nav-item"><span class="nav-icon">💰</span> Financeiro <span class="nav-badge red">12</span></a>
+      <a class="nav-item"><span class="nav-icon">🌐</span> Comercial</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Operação</div>
+      <a class="nav-item"><span class="nav-icon">📅</span> Agenda</a>
+      <a class="nav-item"><span class="nav-icon">👥</span> Clientes</a>
+      <a class="nav-item"><span class="nav-icon">🏢</span> Unidades</a>
+      <a class="nav-item"><span class="nav-icon">👔</span> Equipe</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Módulos Ativos</div>
+      <a class="nav-item"><span class="nav-icon">🏋️</span> Ed. Física</a>
+      <a class="nav-item"><span class="nav-icon">🩺</span> Fisioterapia</a>
+      <a class="nav-item"><span class="nav-icon">🥗</span> Nutrição</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Premium</div>
+      <a class="nav-item"><span class="nav-icon">✨</span> AI Analytics <span class="nav-badge purple">Pro</span></a>
+      <a class="nav-item"><span class="nav-icon">💬</span> Comunicação</a>
+      <a class="nav-item"><span class="nav-icon">⚙️</span> Configurações</a>
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-avatar">MC</div>
+      <div>
+        <div class="user-name">Marina Costa</div>
+        <div class="user-role">Gestora · Studio Vita</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="main">
+  <header class="topbar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input placeholder="Buscar clientes, profissionais, relatórios...">
+    </div>
+    <div class="topbar-right">
+      <button class="top-btn">🔔<span class="notif-dot"></span></button>
+      <button class="top-btn">⚙️</button>
+    </div>
+  </header>
+
+  <div class="page">
+    <div class="page-header anim d1">
+      <div>
+        <h1 class="greeting">Visão Executiva</h1>
+        <p class="greeting-sub">Studio Vita · <b>2 unidades</b> · Março 2026</p>
+      </div>
+      <div class="unit-switch">
+        <button class="unit-btn active">Todas</button>
+        <button class="unit-btn">Unidade Centro</button>
+        <button class="unit-btn">Unidade Jardins</button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpis anim d2">
+      <div class="kpi">
+        <div class="kpi-label">Receita Mensal</div>
+        <div class="kpi-val">R$ 87.2k</div>
+        <span class="kpi-trend up">↑ +12% vs fev</span>
+        <div class="kpi-bar"><div class="kpi-bar-fill" style="width:78%;background:var(--primary)"></div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Clientes Ativos</div>
+        <div class="kpi-val">342</div>
+        <span class="kpi-trend up">↑ +18 este mês</span>
+        <div class="kpi-bar"><div class="kpi-bar-fill" style="width:85%;background:var(--secondary)"></div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Taxa de Ocupação</div>
+        <div class="kpi-val">76%</div>
+        <span class="kpi-trend up">↑ +4pp</span>
+        <div class="kpi-bar"><div class="kpi-bar-fill" style="width:76%;background:var(--accent)"></div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Churn Mensal</div>
+        <div class="kpi-val">3.2%</div>
+        <span class="kpi-trend down">↑ +0.4pp</span>
+        <div class="kpi-bar"><div class="kpi-bar-fill" style="width:32%;background:var(--error)"></div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Ticket Médio</div>
+        <div class="kpi-val">R$ 254</div>
+        <span class="kpi-trend up">↑ +R$12</span>
+        <div class="kpi-bar"><div class="kpi-bar-fill" style="width:65%;background:var(--success)"></div></div>
+      </div>
+    </div>
+
+    <!-- CHARTS ROW -->
+    <div class="grid-2 anim d3">
+      <div class="card">
+        <div class="card-head"><span class="card-t">💰 Receita Mensal</span><a class="card-a">Detalhes →</a></div>
+        <div class="card-b"><div class="chart-wrap"><canvas id="revenueChart"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-t">📅 Ocupação por Dia</span><a class="card-a">Detalhes →</a></div>
+        <div class="card-b"><div class="chart-wrap"><canvas id="occupancyChart"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- BOTTOM GRID -->
+    <div class="grid-3">
+      <div>
+        <!-- TEAM -->
+        <div class="card anim d4">
+          <div class="card-head"><span class="card-t">👔 Performance da Equipe</span><a class="card-a">Ver equipe →</a></div>
+          <div class="card-b">
+            <div class="team-row">
+              <div class="team-av" style="background:var(--primary)">RF</div>
+              <div class="team-info"><div class="team-name">Rafael Ferreira</div><div class="team-spec">Personal Trainer · Centro</div></div>
+              <div class="team-stat"><div class="team-num">47</div><div class="team-sub">clientes · R$12.4k</div></div>
+            </div>
+            <div class="team-row">
+              <div class="team-av" style="background:var(--secondary)">LC</div>
+              <div class="team-info"><div class="team-name">Luísa Campos</div><div class="team-spec">Fisioterapeuta · Jardins</div></div>
+              <div class="team-stat"><div class="team-num">38</div><div class="team-sub">pacientes · R$18.6k</div></div>
+            </div>
+            <div class="team-row">
+              <div class="team-av" style="background:var(--accent)">PM</div>
+              <div class="team-info"><div class="team-name">Pedro Martins</div><div class="team-spec">Nutricionista · Centro</div></div>
+              <div class="team-stat"><div class="team-num">52</div><div class="team-sub">pacientes · R$15.8k</div></div>
+            </div>
+            <div class="team-row">
+              <div class="team-av" style="background:#EC4899">AS</div>
+              <div class="team-info"><div class="team-name">Amanda Souza</div><div class="team-spec">Personal Trainer · Jardins</div></div>
+              <div class="team-stat"><div class="team-num">41</div><div class="team-sub">clientes · R$10.2k</div></div>
+            </div>
+            <div class="team-row">
+              <div class="team-av" style="background:#06B6D4">TA</div>
+              <div class="team-info"><div class="team-name">Thiago Alves</div><div class="team-spec">Fisioterapeuta · Centro</div></div>
+              <div class="team-stat"><div class="team-num">35</div><div class="team-sub">pacientes · R$16.1k</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FUNNEL -->
+        <div class="card anim d5">
+          <div class="card-head"><span class="card-t">🌐 Funil Comercial</span><a class="card-a">CRM →</a></div>
+          <div class="card-b">
+            <div class="funnel-stage">
+              <div class="funnel-color" style="background:var(--secondary)"></div>
+              <div class="funnel-info"><div class="funnel-name">Novos Leads</div><div class="funnel-sub">Últimos 30 dias</div></div>
+              <div class="funnel-val">64</div>
+            </div>
+            <div class="funnel-stage">
+              <div class="funnel-color" style="background:var(--primary-light)"></div>
+              <div class="funnel-info"><div class="funnel-name">Em Contato</div><div class="funnel-sub">Aguardando agendamento</div></div>
+              <div class="funnel-val">28</div>
+            </div>
+            <div class="funnel-stage">
+              <div class="funnel-color" style="background:var(--accent)"></div>
+              <div class="funnel-info"><div class="funnel-name">Avaliação Agendada</div><div class="funnel-sub">Próximos 7 dias</div></div>
+              <div class="funnel-val">12</div>
+            </div>
+            <div class="funnel-stage">
+              <div class="funnel-color" style="background:var(--success)"></div>
+              <div class="funnel-info"><div class="funnel-name">Convertidos</div><div class="funnel-sub">Este mês</div></div>
+              <div class="funnel-val" style="color:var(--success)">18</div>
+            </div>
+            <div class="funnel-stage">
+              <div class="funnel-color" style="background:var(--error)"></div>
+              <div class="funnel-info"><div class="funnel-name">Perdidos</div><div class="funnel-sub">Este mês</div></div>
+              <div class="funnel-val" style="color:var(--error)">6</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <!-- AI INSIGHTS -->
+        <div class="card ai-card anim d4">
+          <div class="card-head"><span class="card-t" style="color:var(--ai-purple)">✨ AI Insights Executivos</span></div>
+          <div class="card-b">
+            <div class="ai-item">
+              <div class="ai-dot"></div>
+              <div>
+                <div class="ai-text">Receita cresceu <strong>12% vs fevereiro</strong>, puxada por pacotes de fisioterapia na unidade Jardins (+R$8.2k).</div>
+                <span class="ai-action">Ver detalhes →</span>
+              </div>
+            </div>
+            <div class="ai-item">
+              <div class="ai-dot"></div>
+              <div>
+                <div class="ai-text"><strong>Churn subiu</strong> 0.4pp. 8 dos 11 cancelamentos são de planos de EF na unidade Centro. Investigue preço vs satisfação.</div>
+                <span class="ai-action">Analisar churn →</span>
+              </div>
+            </div>
+            <div class="ai-item">
+              <div class="ai-dot"></div>
+              <div>
+                <div class="ai-text"><strong>Sexta-feira 14h-17h</strong> tem 40% de ociosidade. Considere campanha promocional ou aulas em grupo.</div>
+                <span class="ai-action">Criar campanha →</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ALERTS -->
+        <div class="card anim d5">
+          <div class="card-head"><span class="card-t">⚠️ Alertas de Negócio</span></div>
+          <div class="card-b">
+            <div class="alrt err"><span>💳</span> <span><strong>12 inadimplentes</strong> — R$3.048 a receber vencido</span></div>
+            <div class="alrt wrn"><span>📉</span> <span>Retenção da <strong>unidade Centro</strong> caiu 5pp vs mês anterior</span></div>
+            <div class="alrt wrn"><span>👤</span> <span><strong>3 profissionais</strong> com taxa de no-show acima de 15%</span></div>
+            <div class="alrt inf"><span>📦</span> <span>Bundle <strong>Multidisciplinar</strong> disponível — una EF+Fisio+Nutri com desconto</span></div>
+          </div>
+        </div>
+
+        <!-- SATISFACTION -->
+        <div class="card anim d6">
+          <div class="card-head"><span class="card-t">⭐ Satisfação</span></div>
+          <div class="card-b">
+            <div style="text-align:center;padding:12px 0">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:48px;font-weight:700;color:var(--primary)">8.7</div>
+              <div style="font-size:13px;color:var(--text-muted);margin-top:4px">NPS médio · últimos 30 dias</div>
+              <div style="display:flex;justify-content:center;gap:24px;margin-top:16px">
+                <div><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;color:var(--success)">72%</div><div style="font-size:11px;color:var(--text-muted)">Promotores</div></div>
+                <div><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;color:var(--accent)">20%</div><div style="font-size:11px;color:var(--text-muted)">Neutros</div></div>
+                <div><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;color:var(--error)">8%</div><div style="font-size:11px;color:var(--text-muted)">Detratores</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const months = ['Out','Nov','Dez','Jan','Fev','Mar'];
+new Chart(document.getElementById('revenueChart'),{
+  type:'bar',
+  data:{labels:months,datasets:[
+    {label:'Ed. Física',data:[28,30,26,32,34,36],backgroundColor:'#14B8A6',borderRadius:6},
+    {label:'Fisioterapia',data:[22,24,25,28,26,32],backgroundColor:'#818CF8',borderRadius:6},
+    {label:'Nutrição',data:[12,14,13,16,18,19],backgroundColor:'#FBBF24',borderRadius:6}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{usePointStyle:true,pointStyle:'circle',padding:16,font:{size:11,family:'Inter'}}}},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:11,family:'Inter'}}},y:{stacked:true,grid:{color:'#F1F5F9'},ticks:{font:{size:11,family:'JetBrains Mono'},callback:v=>'R$'+v+'k'}}}}
+});
+new Chart(document.getElementById('occupancyChart'),{
+  type:'line',
+  data:{labels:['Seg','Ter','Qua','Qui','Sex','Sáb'],datasets:[
+    {label:'Centro',data:[82,78,75,80,60,55],borderColor:'#0F766E',backgroundColor:'rgba(15,118,110,.08)',fill:true,tension:.4,pointRadius:4,pointBackgroundColor:'#0F766E'},
+    {label:'Jardins',data:[70,72,68,74,65,50],borderColor:'#6366F1',backgroundColor:'rgba(99,102,241,.08)',fill:true,tension:.4,pointRadius:4,pointBackgroundColor:'#6366F1'}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{usePointStyle:true,pointStyle:'circle',padding:16,font:{size:11,family:'Inter'}}}},scales:{x:{grid:{display:false},ticks:{font:{size:11,family:'Inter'}}},y:{grid:{color:'#F1F5F9'},ticks:{font:{size:11,family:'JetBrains Mono'},callback:v=>v+'%'},min:40,max:100}}}
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modula Health — Dashboard Profissional</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #0F766E;
+  --primary-light: #14B8A6;
+  --primary-dark: #0D5F58;
+  --primary-50: #F0FDFA;
+  --primary-100: #CCFBF1;
+  --secondary: #6366F1;
+  --secondary-light: #818CF8;
+  --secondary-50: #EEF2FF;
+  --accent: #F59E0B;
+  --accent-50: #FFFBEB;
+  --success: #22C55E;
+  --success-50: #F0FDF4;
+  --warning: #F97316;
+  --warning-50: #FFF7ED;
+  --error: #EF4444;
+  --error-50: #FEF2F2;
+  --bg: #F8FAFC;
+  --surface: #FFFFFF;
+  --surface-alt: #F1F5F9;
+  --text-primary: #0F172A;
+  --text-secondary: #64748B;
+  --text-muted: #94A3B8;
+  --border: #E2E8F0;
+  --border-light: #F1F5F9;
+  --sidebar-bg: #0F172A;
+  --sidebar-hover: #1E293B;
+  --sidebar-active: #0F766E;
+  --ai-purple: #8B5CF6;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.05);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text-primary); display: flex; min-height: 100vh; }
+
+/* ═══ SIDEBAR ═══ */
+.sidebar {
+  width: 260px; background: var(--sidebar-bg); display: flex; flex-direction: column;
+  position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+}
+.sidebar-header {
+  padding: 20px 20px 16px; display: flex; align-items: center; gap: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.logo-mark {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, #8B5CF6, #14B8A6);
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  font-weight: 800; color: white; font-size: 16px;
+}
+.logo-text { color: #fff; font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+.logo-text span { color: var(--primary-light); }
+
+.sidebar-nav { flex: 1; padding: 12px 10px; overflow-y: auto; }
+.nav-section { margin-bottom: 4px; }
+.nav-label {
+  font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3);
+  text-transform: uppercase; letter-spacing: 1.2px; padding: 10px 12px 6px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 11px; padding: 9px 12px;
+  border-radius: var(--radius-sm); color: rgba(255,255,255,0.55);
+  font-size: 13.5px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+  margin-bottom: 1px; text-decoration: none; position: relative;
+}
+.nav-item:hover { background: var(--sidebar-hover); color: rgba(255,255,255,0.9); }
+.nav-item.active { background: var(--sidebar-active); color: #fff; font-weight: 600; }
+.nav-icon { width: 20px; text-align: center; font-size: 15px; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto; font-size: 10px; font-weight: 700;
+  padding: 2px 7px; border-radius: 10px; min-width: 20px; text-align: center;
+}
+.nav-badge.red { background: var(--error); color: #fff; }
+.nav-badge.purple { background: var(--ai-purple); color: #fff; }
+.nav-badge.orange { background: var(--warning); color: #fff; }
+.nav-item.locked { opacity: 0.3; pointer-events: none; }
+.lock-icon { margin-left: auto; font-size: 11px; }
+
+.sidebar-footer { padding: 12px 10px; border-top: 1px solid rgba(255,255,255,0.06); }
+.user-card {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  border-radius: var(--radius-sm); cursor: pointer; transition: background 0.15s;
+}
+.user-card:hover { background: var(--sidebar-hover); }
+.user-avatar {
+  width: 34px; height: 34px; border-radius: 50%; background: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: 13px; flex-shrink: 0;
+}
+.user-name { color: #fff; font-size: 13px; font-weight: 600; }
+.user-role { color: rgba(255,255,255,0.4); font-size: 11px; }
+
+/* ═══ MAIN ═══ */
+.main { margin-left: 260px; flex: 1; min-height: 100vh; }
+
+/* ═══ TOP BAR ═══ */
+.topbar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 0 32px; height: 60px; display: flex; align-items: center; gap: 16px;
+  position: sticky; top: 0; z-index: 50;
+}
+.search-wrap { flex: 1; max-width: 420px; position: relative; }
+.search-wrap input {
+  width: 100%; padding: 9px 14px 9px 38px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 13px; font-family: inherit; background: var(--surface-alt);
+  outline: none; color: var(--text-primary); transition: all 0.15s;
+}
+.search-wrap input::placeholder { color: var(--text-muted); }
+.search-wrap input:focus { border-color: var(--primary-light); background: #fff; box-shadow: 0 0 0 3px rgba(20,184,166,0.08); }
+.search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 14px; }
+.topbar-right { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.top-btn {
+  height: 38px; border-radius: var(--radius-sm); border: none;
+  background: transparent; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; font-size: 17px; color: var(--text-secondary);
+  transition: all 0.15s; padding: 0 10px; position: relative;
+}
+.top-btn:hover { background: var(--surface-alt); color: var(--text-primary); }
+.top-btn .notif-dot {
+  position: absolute; top: 6px; right: 6px; width: 8px; height: 8px;
+  background: var(--error); border-radius: 50%; border: 2px solid #fff;
+}
+.ai-btn {
+  background: linear-gradient(135deg, rgba(139,92,246,0.08), rgba(20,184,166,0.08));
+  border: 1px solid rgba(139,92,246,0.18); color: var(--ai-purple);
+  font-size: 13px; font-weight: 600; gap: 6px; font-family: inherit; padding: 0 14px;
+}
+.ai-btn:hover { background: linear-gradient(135deg, rgba(139,92,246,0.14), rgba(20,184,166,0.14)); }
+
+/* ═══ PAGE ═══ */
+.page { padding: 28px 32px 48px; max-width: 1400px; }
+
+.greeting { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+.greeting-sub { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
+.greeting-sub b { color: var(--primary); font-weight: 600; }
+.page-header { margin-bottom: 26px; }
+
+/* ═══ METRICS ═══ */
+.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 22px; }
+.m-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 22px; transition: all 0.2s;
+}
+.m-card:hover { box-shadow: var(--shadow-md); border-color: rgba(20,184,166,0.3); }
+.m-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.m-label { font-size: 12.5px; font-weight: 500; color: var(--text-secondary); }
+.m-icon {
+  width: 38px; height: 38px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+}
+.m-icon.c1 { background: var(--primary-50); }
+.m-icon.c2 { background: var(--secondary-50); }
+.m-icon.c3 { background: var(--accent-50); }
+.m-icon.c4 { background: var(--success-50); }
+.m-val { font-family: 'JetBrains Mono', monospace; font-size: 30px; font-weight: 600; letter-spacing: -1.5px; }
+.m-trend {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 12px; font-weight: 600; margin-top: 6px;
+  padding: 2px 8px; border-radius: 20px;
+}
+.m-trend.up { color: #16A34A; background: var(--success-50); }
+.m-trend.down { color: var(--error); background: var(--error-50); }
+.m-trend.neutral { color: var(--text-muted); background: var(--surface-alt); }
+
+/* ═══ QUICK ACTIONS ═══ */
+.qactions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+.qa {
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); cursor: pointer; transition: all 0.18s;
+}
+.qa:hover { border-color: var(--primary-light); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+.qa-icon {
+  width: 40px; height: 40px; border-radius: var(--radius-xs);
+  display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+}
+.qa-text { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.qa-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+/* ═══ GRID ═══ */
+.grid { display: grid; grid-template-columns: 1fr 380px; gap: 24px; }
+
+/* ═══ CARD ═══ */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 24px;
+}
+.card:last-child { margin-bottom: 0; }
+.card-head { padding: 18px 22px 0; display: flex; align-items: center; justify-content: space-between; }
+.card-t { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.card-a { font-size: 12.5px; color: var(--primary); font-weight: 600; cursor: pointer; text-decoration: none; }
+.card-a:hover { text-decoration: underline; }
+.card-b { padding: 14px 22px 22px; }
+
+/* ═══ AGENDA ═══ */
+.ag {
+  display: flex; align-items: center; gap: 14px; padding: 12px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.ag:last-child { border-bottom: none; padding-bottom: 0; }
+.ag-time { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; color: var(--text-secondary); min-width: 50px; }
+.ag-av {
+  width: 40px; height: 40px; border-radius: 50%; display: flex;
+  align-items: center; justify-content: center; font-weight: 700;
+  font-size: 13px; color: #fff; flex-shrink: 0;
+}
+.ag-info { flex: 1; min-width: 0; }
+.ag-name { font-size: 13.5px; font-weight: 600; }
+.ag-type { font-size: 12px; color: var(--text-muted); margin-top: 1px; display: flex; align-items: center; gap: 6px; }
+.ag-status { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+.ag-status.ok { background: var(--success-50); color: #16A34A; }
+.ag-status.pend { background: var(--warning-50); color: #C2410C; }
+.ag-status.now { background: var(--primary-50); color: var(--primary); }
+
+.ag-now {
+  background: linear-gradient(135deg, var(--primary-50), rgba(20,184,166,0.06));
+  border-radius: var(--radius-sm); margin: 4px -22px; padding: 4px 22px;
+  border-left: 3px solid var(--primary);
+}
+.ag-now .ag { border: none; }
+.now-tag { color: var(--primary); font-weight: 700; font-size: 11px; }
+
+.mod-badge {
+  font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 10px;
+}
+.mod-badge.ef { background: var(--primary-100); color: var(--primary-dark); }
+.mod-badge.fisio { background: var(--secondary-50); color: #4338CA; }
+.mod-badge.nutri { background: var(--accent-50); color: #92400E; }
+.mod-badge.novo { background: var(--ai-purple); color: #fff; }
+
+/* ═══ AI CARD ═══ */
+.ai-card {
+  border: 1px solid rgba(139,92,246,0.18);
+  background: linear-gradient(135deg, rgba(139,92,246,0.02), rgba(20,184,166,0.02));
+}
+.ai-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(139,92,246,0.06); }
+.ai-item:last-child { border-bottom: none; padding-bottom: 0; }
+.ai-dot {
+  width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0;
+  background: linear-gradient(135deg, #8B5CF6, #14B8A6);
+}
+.ai-text { font-size: 13px; color: var(--text-secondary); line-height: 1.55; }
+.ai-text strong { color: var(--text-primary); }
+.ai-action { font-size: 12px; color: var(--ai-purple); font-weight: 600; cursor: pointer; margin-top: 4px; display: inline-block; }
+.ai-action:hover { text-decoration: underline; }
+
+/* ═══ TASKS ═══ */
+.tk { display: flex; align-items: flex-start; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border-light); }
+.tk:last-child { border-bottom: none; }
+.tk-chk {
+  width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border);
+  cursor: pointer; transition: all 0.15s; flex-shrink: 0; margin-top: 2px;
+  display: flex; align-items: center; justify-content: center; font-size: 11px;
+}
+.tk-chk:hover { border-color: var(--primary); background: var(--primary-50); }
+.tk-chk.done { border-color: var(--success); background: var(--success); color: #fff; }
+.tk-body { flex: 1; }
+.tk-text { font-size: 13px; font-weight: 500; }
+.tk-text.done { text-decoration: line-through; color: var(--text-muted); }
+.tk-meta { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+.tk-pri { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin-top: 2px; }
+.tk-pri.h { background: var(--error-50); color: var(--error); }
+.tk-pri.m { background: var(--warning-50); color: var(--warning); }
+.tk-pri.l { background: var(--surface-alt); color: var(--text-muted); }
+
+/* ═══ ALERTS ═══ */
+.alrt { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 8px; font-size: 12.5px; line-height: 1.45; }
+.alrt:last-child { margin-bottom: 0; }
+.alrt.err { background: var(--error-50); color: #991B1B; }
+.alrt.wrn { background: var(--warning-50); color: #9A3412; }
+.alrt.inf { background: var(--secondary-50); color: #3730A3; }
+.alrt strong { font-weight: 600; }
+.alrt-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+/* ═══ BARS ═══ */
+.bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.bar-row:last-child { margin-bottom: 0; }
+.bar-label { font-size: 12px; color: var(--text-secondary); min-width: 32px; }
+.bar-track { flex: 1; height: 26px; background: var(--surface-alt); border-radius: 6px; overflow: hidden; }
+.bar-fill {
+  height: 100%; border-radius: 6px; display: flex; align-items: center;
+  justify-content: flex-end; padding-right: 10px; transition: width 0.8s ease;
+}
+.bar-fill span { font-size: 11px; font-weight: 700; color: #fff; }
+
+/* ═══ ANIMATIONS ═══ */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+.anim { animation: fadeUp 0.45s ease-out forwards; opacity: 0; }
+.d1 { animation-delay: 0.04s; } .d2 { animation-delay: 0.08s; }
+.d3 { animation-delay: 0.12s; } .d4 { animation-delay: 0.16s; }
+.d5 { animation-delay: 0.2s; }  .d6 { animation-delay: 0.24s; }
+.d7 { animation-delay: 0.28s; }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="logo-mark">M</div>
+    <div class="logo-text">Modula <span>Health</span></div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section">
+      <div class="nav-label">Principal</div>
+      <a class="nav-item active"><span class="nav-icon">🏠</span> Dashboard</a>
+      <a class="nav-item"><span class="nav-icon">📅</span> Agenda <span class="nav-badge orange">3</span></a>
+      <a class="nav-item"><span class="nav-icon">👥</span> Clientes</a>
+      <a class="nav-item"><span class="nav-icon">📋</span> Prontuário</a>
+      <a class="nav-item"><span class="nav-icon">📄</span> Documentos</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Educação Física</div>
+      <a class="nav-item"><span class="nav-icon">📊</span> Avaliações</a>
+      <a class="nav-item"><span class="nav-icon">🏋️</span> Treinos</a>
+      <a class="nav-item"><span class="nav-icon">📈</span> Evolução</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Módulos</div>
+      <a class="nav-item"><span class="nav-icon">💰</span> Financeiro <span class="nav-badge red">5</span></a>
+      <a class="nav-item"><span class="nav-icon">💬</span> Mensagens</a>
+      <a class="nav-item"><span class="nav-icon">📉</span> Analytics</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Premium</div>
+      <a class="nav-item"><span class="nav-icon">✨</span> AI Copiloto <span class="nav-badge purple">Novo</span></a>
+      <a class="nav-item locked"><span class="nav-icon">🌐</span> CRM <span class="lock-icon">🔒</span></a>
+      <a class="nav-item locked"><span class="nav-icon">🎓</span> Educação <span class="lock-icon">🔒</span></a>
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-avatar">RF</div>
+      <div>
+        <div class="user-name">Rafael Ferreira</div>
+        <div class="user-role">Personal Trainer · CREF 012345</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Buscar clientes, treinos, avaliações...">
+    </div>
+    <div class="topbar-right">
+      <button class="top-btn ai-btn">✨ AI Assist</button>
+      <button class="top-btn">🔔<span class="notif-dot"></span></button>
+      <button class="top-btn">⚙️</button>
+    </div>
+  </header>
+
+  <div class="page">
+    <!-- GREETING -->
+    <div class="page-header anim d1">
+      <h1 class="greeting">Bom dia, Rafael 👋</h1>
+      <p class="greeting-sub">Segunda-feira, 16 de Março · Você tem <b>8 atendimentos</b> hoje</p>
+    </div>
+
+    <!-- METRICS -->
+    <div class="metrics anim d2">
+      <div class="m-card">
+        <div class="m-top"><span class="m-label">Clientes Ativos</span><div class="m-icon c1">👥</div></div>
+        <div class="m-val">47</div>
+        <span class="m-trend up">↑ +3 este mês</span>
+      </div>
+      <div class="m-card">
+        <div class="m-top"><span class="m-label">Sessões Hoje</span><div class="m-icon c2">📅</div></div>
+        <div class="m-val">8</div>
+        <span class="m-trend neutral">6 confirmadas</span>
+      </div>
+      <div class="m-card">
+        <div class="m-top"><span class="m-label">Receita do Mês</span><div class="m-icon c3">💰</div></div>
+        <div class="m-val">R$ 12.4k</div>
+        <span class="m-trend up">↑ +18% vs anterior</span>
+      </div>
+      <div class="m-card">
+        <div class="m-top"><span class="m-label">Aderência Média</span><div class="m-icon c4">🎯</div></div>
+        <div class="m-val">84%</div>
+        <span class="m-trend down">↓ -2% vs anterior</span>
+      </div>
+    </div>
+
+    <!-- QUICK ACTIONS -->
+    <div class="qactions anim d3">
+      <div class="qa">
+        <div class="qa-icon" style="background:var(--primary-50)">➕</div>
+        <div><div class="qa-text">Novo Cliente</div><div class="qa-sub">Cadastrar aluno</div></div>
+      </div>
+      <div class="qa">
+        <div class="qa-icon" style="background:var(--secondary-50)">📅</div>
+        <div><div class="qa-text">Agendar</div><div class="qa-sub">Nova sessão</div></div>
+      </div>
+      <div class="qa">
+        <div class="qa-icon" style="background:var(--accent-50)">🏋️</div>
+        <div><div class="qa-text">Prescrever Treino</div><div class="qa-sub">Montar ficha</div></div>
+      </div>
+      <div class="qa">
+        <div class="qa-icon" style="background:var(--success-50)">📊</div>
+        <div><div class="qa-text">Nova Avaliação</div><div class="qa-sub">Avaliação física</div></div>
+      </div>
+    </div>
+
+    <!-- GRID -->
+    <div class="grid">
+      <!-- LEFT -->
+      <div>
+        <!-- AGENDA -->
+        <div class="card anim d4">
+          <div class="card-head">
+            <span class="card-t">📅 Agenda de Hoje</span>
+            <a class="card-a">Ver agenda completa →</a>
+          </div>
+          <div class="card-b">
+            <div class="ag">
+              <span class="ag-time">07:00</span>
+              <div class="ag-av" style="background:#0F766E">ML</div>
+              <div class="ag-info">
+                <div class="ag-name">Marcos Lima</div>
+                <div class="ag-type">Treino A — Peito/Tríceps <span class="mod-badge ef">EF</span></div>
+              </div>
+              <span class="ag-status ok">Confirmado</span>
+            </div>
+            <div class="ag">
+              <span class="ag-time">08:00</span>
+              <div class="ag-av" style="background:#6366F1">AS</div>
+              <div class="ag-info">
+                <div class="ag-name">Ana Santos</div>
+                <div class="ag-type">Reavaliação física <span class="mod-badge ef">Aval</span></div>
+              </div>
+              <span class="ag-status ok">Confirmado</span>
+            </div>
+
+            <div class="ag-now">
+              <div class="ag" style="border:none;padding:12px 0">
+                <span class="ag-time" style="color:var(--primary);font-weight:600">09:00</span>
+                <div class="ag-av" style="background:#F59E0B">CP</div>
+                <div class="ag-info">
+                  <div class="ag-name">Carla Pereira · <span class="now-tag">AGORA</span></div>
+                  <div class="ag-type">Treino B — Costas/Bíceps <span class="mod-badge ef">EF</span></div>
+                </div>
+                <span class="ag-status now">Check-in ✓</span>
+              </div>
+            </div>
+
+            <div class="ag">
+              <span class="ag-time">10:00</span>
+              <div class="ag-av" style="background:#EF4444">DR</div>
+              <div class="ag-info">
+                <div class="ag-name">Daniel Rocha</div>
+                <div class="ag-type">Treino C — Pernas <span class="mod-badge ef">EF</span></div>
+              </div>
+              <span class="ag-status pend">Pendente</span>
+            </div>
+            <div class="ag">
+              <span class="ag-time">11:00</span>
+              <div class="ag-av" style="background:#8B5CF6">JM</div>
+              <div class="ag-info">
+                <div class="ag-name">Júlia Mendes</div>
+                <div class="ag-type">Avaliação inicial <span class="mod-badge novo">Novo</span></div>
+              </div>
+              <span class="ag-status ok">Confirmado</span>
+            </div>
+            <div class="ag">
+              <span class="ag-time">14:00</span>
+              <div class="ag-av" style="background:#0D5F58">BT</div>
+              <div class="ag-info">
+                <div class="ag-name">Bruno Torres</div>
+                <div class="ag-type">Treino A — Peito/Tríceps <span class="mod-badge ef">EF</span></div>
+              </div>
+              <span class="ag-status pend">Pendente</span>
+            </div>
+            <div class="ag">
+              <span class="ag-time">15:00</span>
+              <div class="ag-av" style="background:#22C55E">FS</div>
+              <div class="ag-info">
+                <div class="ag-name">Fernanda Silva</div>
+                <div class="ag-type">Treino D — Full body <span class="mod-badge ef">EF</span></div>
+              </div>
+              <span class="ag-status ok">Confirmado</span>
+            </div>
+            <div class="ag">
+              <span class="ag-time">16:00</span>
+              <div class="ag-av" style="background:#F97316">RO</div>
+              <div class="ag-info">
+                <div class="ag-name">Ricardo Oliveira</div>
+                <div class="ag-type">Treino B — Costas/Bíceps <span class="mod-badge ef">EF</span></div>
+              </div>
+              <span class="ag-status ok">Confirmado</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- TASKS -->
+        <div class="card anim d5">
+          <div class="card-head">
+            <span class="card-t">✅ Tarefas Pendentes</span>
+            <a class="card-a">Ver todas →</a>
+          </div>
+          <div class="card-b">
+            <div class="tk">
+              <div class="tk-chk"></div>
+              <div class="tk-body">
+                <div class="tk-text">Enviar treino atualizado — Lucas Andrade</div>
+                <div class="tk-meta">Vence hoje · Treino B redesenhado</div>
+              </div>
+              <span class="tk-pri h">Urgente</span>
+            </div>
+            <div class="tk">
+              <div class="tk-chk"></div>
+              <div class="tk-body">
+                <div class="tk-text">Registrar evolução — Patrícia Vieira</div>
+                <div class="tk-meta">Sessão de ontem · Evolução pendente</div>
+              </div>
+              <span class="tk-pri h">Urgente</span>
+            </div>
+            <div class="tk">
+              <div class="tk-chk"></div>
+              <div class="tk-body">
+                <div class="tk-text">Reavaliação trimestral — 4 clientes</div>
+                <div class="tk-meta">Vence esta semana</div>
+              </div>
+              <span class="tk-pri m">Média</span>
+            </div>
+            <div class="tk">
+              <div class="tk-chk done">✓</div>
+              <div class="tk-body">
+                <div class="tk-text done">Montar treino — Júlia Mendes</div>
+                <div class="tk-meta">Concluído hoje</div>
+              </div>
+              <span class="tk-pri l">Feito</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div>
+        <!-- AI INSIGHTS -->
+        <div class="card ai-card anim d4">
+          <div class="card-head">
+            <span class="card-t" style="color:var(--ai-purple)">✨ AI Insights</span>
+          </div>
+          <div class="card-b">
+            <div class="ai-item">
+              <div class="ai-dot"></div>
+              <div>
+                <div class="ai-text"><strong>3 alunos</strong> com aderência abaixo de 60% esta semana. Considere uma mensagem de motivação.</div>
+                <span class="ai-action">Gerar mensagens →</span>
+              </div>
+            </div>
+            <div class="ai-item">
+              <div class="ai-dot"></div>
+              <div>
+                <div class="ai-text"><strong>Carla Pereira</strong> completou 12 semanas no Treino B. Hora de reavaliar e progredir.</div>
+                <span class="ai-action">Ver sugestão de progressão →</span>
+              </div>
+            </div>
+            <div class="ai-item">
+              <div class="ai-dot"></div>
+              <div>
+                <div class="ai-text"><strong>Daniel Rocha</strong> reportou dor lombar no check-in. Revise o treino de pernas.</div>
+                <span class="ai-action">Ajustar treino →</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ALERTS -->
+        <div class="card anim d5">
+          <div class="card-head"><span class="card-t">⚠️ Alertas</span></div>
+          <div class="card-b">
+            <div class="alrt err">
+              <span class="alrt-icon">💳</span>
+              <span><strong>2 pagamentos</strong> vencidos há mais de 5 dias</span>
+            </div>
+            <div class="alrt wrn">
+              <span class="alrt-icon">⏰</span>
+              <span><strong>Daniel Rocha</strong> não confirmou sessão de 10:00</span>
+            </div>
+            <div class="alrt inf">
+              <span class="alrt-icon">📦</span>
+              <span>Módulo <strong>CRM</strong> disponível — Teste grátis por 14 dias</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ADERENCIA SEMANAL -->
+        <div class="card anim d6">
+          <div class="card-head"><span class="card-t">📈 Aderência Semanal</span></div>
+          <div class="card-b">
+            <div class="bar-row">
+              <span class="bar-label">Seg</span>
+              <div class="bar-track"><div class="bar-fill" style="width:92%;background:var(--primary)"><span>92%</span></div></div>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">Ter</span>
+              <div class="bar-track"><div class="bar-fill" style="width:85%;background:var(--primary)"><span>85%</span></div></div>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">Qua</span>
+              <div class="bar-track"><div class="bar-fill" style="width:78%;background:var(--primary-light)"><span>78%</span></div></div>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">Qui</span>
+              <div class="bar-track"><div class="bar-fill" style="width:88%;background:var(--primary)"><span>88%</span></div></div>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">Sex</span>
+              <div class="bar-track"><div class="bar-fill" style="width:70%;background:var(--warning)"><span>70%</span></div></div>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">Sáb</span>
+              <div class="bar-track"><div class="bar-fill" style="width:60%;background:var(--warning)"><span>60%</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
