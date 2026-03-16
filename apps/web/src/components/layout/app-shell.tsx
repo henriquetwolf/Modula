@@ -21,6 +21,13 @@ import {
   Menu,
   ScrollText,
   CreditCard,
+  Stethoscope,
+  HeartPulse,
+  Activity,
+  TrendingUp,
+  Target,
+  MessageSquare,
+  Building2,
 } from 'lucide-react'
 import { getSupabaseBrowser } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -56,7 +63,25 @@ const NAV_SECTIONS: SidebarNavSection[] = [
       { label: 'Financeiro', href: '/financial', icon: DollarSign },
       { label: 'Avaliações', href: '/evaluations', icon: ClipboardCheck },
       { label: 'Treinos', href: '/training', icon: Dumbbell },
+      { label: 'Monitoramento', href: '/monitoring', icon: Activity },
+      { label: 'Espaços', href: '/facility', icon: Building2 },
       { label: 'Documentos', href: '/documents', icon: FileText },
+    ],
+  },
+  {
+    title: 'Fisioterapia',
+    items: [
+      { label: 'Avaliação Fisio', href: '/fisio/evaluation', icon: Stethoscope },
+      { label: 'Plano Terapêutico', href: '/fisio/treatment', icon: HeartPulse },
+      { label: 'Exercícios Fisio', href: '/fisio/exercises', icon: Activity },
+      { label: 'Evolução Clínica', href: '/fisio/progress', icon: TrendingUp },
+    ],
+  },
+  {
+    title: 'Comercial',
+    items: [
+      { label: 'CRM', href: '/crm', icon: Target },
+      { label: 'Comunicação', href: '/communication', icon: MessageSquare },
     ],
   },
   {
@@ -85,6 +110,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/financial/subscriptions': 'Planos de Clientes',
   '/evaluations': 'Avaliações',
   '/training': 'Treinos',
+  '/monitoring': 'Monitoramento',
+  '/facility': 'Gestão de Espaços',
   '/training/new': 'Novo Treino',
   '/documents': 'Documentos',
   '/consent': 'Consentimentos LGPD',
@@ -92,6 +119,12 @@ const PAGE_TITLES: Record<string, string> = {
   '/billing': 'Plano & Módulos',
   '/configuracoes': 'Configurações',
   '/notifications': 'Notificações',
+  '/fisio/evaluation': 'Avaliação Fisioterapêutica',
+  '/fisio/treatment': 'Plano Terapêutico',
+  '/fisio/exercises': 'Exercícios Terapêuticos',
+  '/fisio/progress': 'Evolução Clínica',
+  '/crm': 'CRM Comercial',
+  '/communication': 'Comunicação',
 }
 
 function getPageTitle(pathname: string): string {
