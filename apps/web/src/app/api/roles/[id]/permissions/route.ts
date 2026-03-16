@@ -14,7 +14,7 @@ export async function GET(
 
     const { id } = await params
 
-    const { data: permissions } = await service
+    const { data: permissions } = await (service as any)
       .from('role_permissions')
       .select('id, module_code, resource, actions, conditions')
       .eq('role_id', id)
@@ -46,22 +46,23 @@ export async function PUT(
 
     const { id } = await params
 
-    const { data: role } = await service
+    const { data: role } = await (service as any)
       .from('roles')
       .select('id, is_system, tenant_id')
       .eq('id', id)
       .single()
 
-    if (!role) return jsonError('Role nao encontrado.', 404)
-    if (role.is_system) return jsonError('Nao e possivel editar permissoes de roles de sistema.', 403)
-    if (role.tenant_id !== profile.tenant_id) return jsonError('Role nao pertence ao seu tenant.', 403)
+    const roleData = role as { id: string; is_system: boolean; tenant_id: string } | null
+    if (!roleData) return jsonError('Role nao encontrado.', 404)
+    if (roleData.is_system) return jsonError('Nao e possivel editar permissoes de roles de sistema.', 403)
+    if (roleData.tenant_id !== profile.tenant_id) return jsonError('Role nao pertence ao seu tenant.', 403)
 
     const body = await request.json()
     const { permissions } = body as { permissions: PermissionInput[] }
 
     if (!Array.isArray(permissions)) return jsonError('permissions deve ser um array.', 400)
 
-    await service
+    await (service as any)
       .from('role_permissions')
       .delete()
       .eq('role_id', id)
@@ -78,7 +79,7 @@ export async function PUT(
         }))
 
       if (rows.length > 0) {
-        const { error: insertErr } = await service
+        const { error: insertErr } = await (service as any)
           .from('role_permissions')
           .insert(rows as Record<string, unknown>[])
 
