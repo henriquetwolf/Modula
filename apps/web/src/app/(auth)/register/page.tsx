@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { GraduationCap, Briefcase } from 'lucide-react'
 
 const PROFESSIONS = [
   { value: 'educacao_fisica', label: 'Educação Física' },
@@ -30,15 +31,23 @@ const registerSchema = z
     email: z.string().email('Email inválido'),
     password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
     confirm_password: z.string(),
+    account_type: z.enum(['professional', 'student']),
     profession: z.enum(['educacao_fisica', 'fisioterapia', 'nutricao'], {
       error: 'Selecione sua profissão',
     }),
-    registration_number: z.string().min(3, 'Número de registro é obrigatório'),
+    registration_number: z.string().optional(),
   })
   .refine((data) => data.password === data.confirm_password, {
     message: 'As senhas não coincidem',
     path: ['confirm_password'],
   })
+  .refine(
+    (data) => data.account_type === 'student' || (data.registration_number && data.registration_number.length >= 3),
+    {
+      message: 'Número de registro é obrigatório para profissionais',
+      path: ['registration_number'],
+    }
+  )
 
 type RegisterFormData = z.infer<typeof registerSchema>
 
@@ -52,10 +61,16 @@ export default function RegisterPage() {
     register,
     handleSubmit,
     control,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
+    defaultValues: {
+      account_type: 'professional',
+    },
   })
+
+  const accountType = watch('account_type')
 
   async function onSubmit(data: RegisterFormData) {
     setError(null)
@@ -66,7 +81,8 @@ export default function RegisterPage() {
         data: {
           full_name: data.full_name,
           profession: data.profession,
-          registration_number: data.registration_number,
+          registration_number: data.registration_number || '',
+          account_type: data.account_type,
         },
       },
     })
@@ -113,6 +129,45 @@ export default function RegisterPage() {
           </div>
         )}
 
+        <Controller
+          name="account_type"
+          control={control}
+          render={({ field }) => (
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => field.onChange('professional')}
+                className={`flex items-center gap-3 rounded-xl border-2 p-3 text-left transition-all ${
+                  field.value === 'professional'
+                    ? 'border-teal-600 bg-teal-50'
+                    : 'border-gray-200 hover:border-teal-300'
+                }`}
+              >
+                <Briefcase className="h-5 w-5 text-teal-600" />
+                <div>
+                  <p className="text-sm font-semibold">Profissional</p>
+                  <p className="text-xs text-muted-foreground">Já atuo na área</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => field.onChange('student')}
+                className={`flex items-center gap-3 rounded-xl border-2 p-3 text-left transition-all ${
+                  field.value === 'student'
+                    ? 'border-indigo-600 bg-indigo-50'
+                    : 'border-gray-200 hover:border-indigo-300'
+                }`}
+              >
+                <GraduationCap className="h-5 w-5 text-indigo-600" />
+                <div>
+                  <p className="text-sm font-semibold">Estudante</p>
+                  <p className="text-xs text-muted-foreground">Estou na graduação</p>
+                </div>
+              </button>
+            </div>
+          )}
+        />
+
         <div className="space-y-2">
           <Label htmlFor="full_name">Nome completo</Label>
           <Input
@@ -141,14 +196,14 @@ export default function RegisterPage() {
         </div>
 
         <div className="space-y-2">
-          <Label>Profissão</Label>
+          <Label>{accountType === 'student' ? 'Curso' : 'Profissão'}</Label>
           <Controller
             name="profession"
             control={control}
             render={({ field }) => (
               <Select onValueChange={field.onChange} value={field.value}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione sua profissão" />
+                  <SelectValue placeholder={accountType === 'student' ? 'Selecione seu curso' : 'Selecione sua profissão'} />
                 </SelectTrigger>
                 <SelectContent>
                   {PROFESSIONS.map((p) => (
@@ -165,17 +220,19 @@ export default function RegisterPage() {
           )}
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="registration_number">Número de registro (CREF/CREFITO/CRN)</Label>
-          <Input
-            id="registration_number"
-            placeholder="Ex: 123456-G/SP"
-            {...register('registration_number')}
-          />
-          {errors.registration_number && (
-            <p className="text-sm text-red-600">{errors.registration_number.message}</p>
-          )}
-        </div>
+        {accountType === 'professional' && (
+          <div className="space-y-2">
+            <Label htmlFor="registration_number">Número de registro (CREF/CREFITO/CRN)</Label>
+            <Input
+              id="registration_number"
+              placeholder="Ex: 123456-G/SP"
+              {...register('registration_number')}
+            />
+            {errors.registration_number && (
+              <p className="text-sm text-red-600">{errors.registration_number.message}</p>
+            )}
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="password">Senha</Label>
@@ -205,7 +262,11 @@ export default function RegisterPage() {
           )}
         </div>
 
-        <Button type="submit" className="w-full bg-teal-600 hover:bg-teal-700" disabled={isSubmitting}>
+        <Button
+          type="submit"
+          className={`w-full ${accountType === 'student' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-teal-600 hover:bg-teal-700'}`}
+          disabled={isSubmitting}
+        >
           {isSubmitting ? 'Criando conta...' : 'Criar conta'}
         </Button>
 
