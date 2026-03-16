@@ -17,7 +17,7 @@ export default async function NewTrainingPage() {
     .from('user_profiles')
     .select('id, tenant_id')
     .eq('auth_user_id', user.id)
-    .single()
+    .single() as unknown as { data: { id: string; tenant_id: string } | null }
 
   if (!profile) {
     redirect('/onboarding')
@@ -28,21 +28,21 @@ export default async function NewTrainingPage() {
     .select('id')
     .eq('tenant_id', profile.tenant_id)
     .limit(1)
-    .single()
+    .single() as unknown as { data: { id: string } | null }
 
   const { data: clients = [] } = await supabase
     .from('client_profiles')
     .select('id, full_name')
     .eq('tenant_id', profile.tenant_id)
     .eq('status', 'active')
-    .order('full_name')
+    .order('full_name') as unknown as { data: { id: string; full_name: string }[] | null }
 
   const { data: exercisesData = [] } = await supabase
     .from('exercises')
     .select('id, name, slug, muscle_groups, primary_muscle, equipment, difficulty, modality')
     .or('is_system.eq.true,tenant_id.eq.' + profile.tenant_id)
     .eq('is_active', true)
-    .order('name')
+    .order('name') as unknown as { data: { id: string; name: string; slug: string | null; muscle_groups: string[]; primary_muscle: string | null; equipment: string[]; difficulty: string; modality: string; movement_pattern: string | null; is_system: boolean }[] | null }
 
   const exercises: Exercise[] = (exercisesData as { id: string; name: string; slug: string | null; muscle_groups: string[]; primary_muscle: string | null; equipment: string[]; difficulty: string; modality: string; movement_pattern: string | null; is_system: boolean }[]).map((e) => ({
     id: e.id,

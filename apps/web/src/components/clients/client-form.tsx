@@ -199,7 +199,7 @@ export function ClientForm({ client }: ClientFormProps) {
         }
         const { error: updateError } = await supabase
           .from('client_profiles')
-          .update({ ...payload, health_info: mergedHealthInfo })
+          .update({ ...payload, health_info: mergedHealthInfo } as never)
           .eq('id', client.id)
 
         if (updateError) throw updateError
@@ -210,11 +210,11 @@ export function ClientForm({ client }: ClientFormProps) {
 
         const { data: newClient, error: insertError } = await supabase
           .from('client_profiles')
-          .insert({ ...payload, tenant_id: tenantId })
+          .insert({ ...payload, tenant_id: tenantId } as never)
           .select('id')
-          .single()
+          .single() as unknown as { data: { id: string } | null; error: unknown }
 
-        if (insertError) throw insertError
+        if (insertError || !newClient) throw insertError ?? new Error('Falha ao criar cliente')
         router.push(`/clients/${newClient.id}`)
       }
       router.refresh()

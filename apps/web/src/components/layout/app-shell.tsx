@@ -26,8 +26,15 @@ import {
   Activity,
   TrendingUp,
   Target,
+  Apple,
+  UtensilsCrossed,
   MessageSquare,
   Building2,
+  BarChart3,
+  Sparkles,
+  Flame,
+  ArrowRightLeft,
+  GraduationCap,
 } from 'lucide-react'
 import { getSupabaseBrowser } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -66,6 +73,7 @@ const NAV_SECTIONS: SidebarNavSection[] = [
       { label: 'Monitoramento', href: '/monitoring', icon: Activity },
       { label: 'Espaços', href: '/facility', icon: Building2 },
       { label: 'Documentos', href: '/documents', icon: FileText },
+      { label: 'Analytics', href: '/analytics', icon: BarChart3 },
     ],
   },
   {
@@ -78,6 +86,21 @@ const NAV_SECTIONS: SidebarNavSection[] = [
     ],
   },
   {
+    title: 'Nutrição',
+    items: [
+      { label: 'Avaliação Nutri', href: '/nutri/evaluation', icon: Apple },
+      { label: 'Plano Alimentar', href: '/nutri/mealplan', icon: UtensilsCrossed },
+      { label: 'Evolução Nutri', href: '/nutri/progress', icon: TrendingUp },
+    ],
+  },
+  {
+    title: 'Multidisciplinar',
+    items: [
+      { label: 'Hábitos & Adesão', href: '/habits', icon: Flame },
+      { label: 'Encaminhamentos', href: '/referrals', icon: ArrowRightLeft },
+    ],
+  },
+  {
     title: 'Comercial',
     items: [
       { label: 'CRM', href: '/crm', icon: Target },
@@ -85,10 +108,22 @@ const NAV_SECTIONS: SidebarNavSection[] = [
     ],
   },
   {
+    title: 'Inteligência Artificial',
+    items: [
+      { label: 'AI Copiloto', href: '/ai', icon: Sparkles },
+    ],
+  },
+  {
     title: 'Compliance',
     items: [
       { label: 'Consentimentos', href: '/consent', icon: ShieldCheck },
       { label: 'Auditoria', href: '/audit', icon: ScrollText },
+    ],
+  },
+  {
+    title: 'Educação',
+    items: [
+      { label: 'Educação', href: '/education', icon: GraduationCap },
     ],
   },
   {
@@ -123,8 +158,16 @@ const PAGE_TITLES: Record<string, string> = {
   '/fisio/treatment': 'Plano Terapêutico',
   '/fisio/exercises': 'Exercícios Terapêuticos',
   '/fisio/progress': 'Evolução Clínica',
+  '/nutri/evaluation': 'Avaliação Nutricional',
+  '/nutri/mealplan': 'Plano Alimentar',
+  '/nutri/progress': 'Evolução Nutricional',
   '/crm': 'CRM Comercial',
   '/communication': 'Comunicação',
+  '/analytics': 'Analytics & BI',
+  '/ai': 'AI Copiloto',
+  '/habits': 'Hábitos & Adesão',
+  '/referrals': 'Encaminhamentos',
+  '/education': 'Educação',
 }
 
 function getPageTitle(pathname: string): string {

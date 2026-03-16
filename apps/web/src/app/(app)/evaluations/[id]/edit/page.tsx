@@ -20,7 +20,7 @@ export default async function EditEvaluationPage({ params }: EditEvaluationPageP
     .from('user_profiles')
     .select('id, tenant_id')
     .eq('auth_user_id', user.id)
-    .single()
+    .single() as unknown as { data: { id: string; tenant_id: string } | null }
 
   if (!profile) {
     redirect('/onboarding')
@@ -31,14 +31,14 @@ export default async function EditEvaluationPage({ params }: EditEvaluationPageP
     .select('id')
     .eq('tenant_id', profile.tenant_id)
     .limit(1)
-    .single()
+    .single() as unknown as { data: { id: string } | null }
 
   const { data: row, error } = await supabase
     .from('evaluations')
     .select('*')
     .eq('id', id)
     .eq('type', 'physical')
-    .single()
+    .single() as unknown as { data: { client_id: string; [key: string]: unknown } | null; error: unknown }
 
   if (error || !row) {
     redirect('/evaluations')
@@ -49,7 +49,7 @@ export default async function EditEvaluationPage({ params }: EditEvaluationPageP
     .select('id, full_name')
     .eq('tenant_id', profile.tenant_id)
     .eq('status', 'active')
-    .order('full_name')
+    .order('full_name') as unknown as { data: { id: string; full_name: string }[] | null }
 
   const clientsList = activeClients as { id: string; full_name: string }[]
   const hasEvalClient = clientsList.some((c) => c.id === row.client_id)
@@ -59,7 +59,7 @@ export default async function EditEvaluationPage({ params }: EditEvaluationPageP
       .from('client_profiles')
       .select('id, full_name')
       .eq('id', row.client_id)
-      .single()
+      .single() as unknown as { data: { id: string; full_name: string } | null }
     if (evalClient) {
       clients = [evalClient as { id: string; full_name: string }, ...clientsList]
     }
@@ -74,7 +74,7 @@ export default async function EditEvaluationPage({ params }: EditEvaluationPageP
         </p>
       </div>
       <EvaluationForm
-        evaluation={row as Evaluation}
+        evaluation={row as unknown as Evaluation}
         clients={(clients ?? []) as { id: string; full_name: string }[]}
         userId={profile.id}
         tenantId={profile.tenant_id}

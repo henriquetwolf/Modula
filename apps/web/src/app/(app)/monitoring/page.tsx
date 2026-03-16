@@ -311,7 +311,7 @@ export default function MonitoringPage() {
                   <div key={i} className="flex flex-1 flex-col items-center gap-1">
                     <div
                       className="w-full rounded-t bg-primary"
-                      style={{ height: v > 0 ? Math.max(20, (v / 4500) * 100 : 4 }}
+                      style={{ height: v > 0 ? Math.max(20, (v / 4500) * 100) : 4 }}
                     />
                     <span className="text-xs text-muted-foreground">S{i + 1}</span>
                   </div>

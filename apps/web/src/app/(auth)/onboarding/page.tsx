@@ -29,7 +29,7 @@ const step1Schema = z.object({
 const step2Schema = z.object({
   unit_name: z.string().min(2, 'Nome da unidade deve ter pelo menos 2 caracteres'),
   unit_type: z.enum(['studio', 'clinic', 'gym', 'office'], {
-    required_error: 'Selecione o tipo da unidade',
+    error: 'Selecione o tipo da unidade',
   }),
   city: z.string().min(2, 'Cidade é obrigatória'),
   state: z.string().min(2, 'Estado é obrigatório'),

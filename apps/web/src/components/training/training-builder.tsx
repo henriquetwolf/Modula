@@ -108,7 +108,7 @@ export function TrainingBuilder({
   const [isSaving, setIsSaving] = useState(false)
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as never,
     defaultValues: {
       client_id: '',
       title: '',
@@ -265,9 +265,9 @@ export function TrainingBuilder({
           duration_weeks: durationWeeks,
           metadata: {},
           created_by: userId,
-        })
+        } as never)
         .select('id')
-        .single()
+        .single() as unknown as { data: { id: string } | null; error: { message: string } | null }
 
       if (planError || !plan) {
         toast({
@@ -289,9 +289,9 @@ export function TrainingBuilder({
             name: day.name,
             day_of_week: day.day_of_week,
             sort_order: i,
-          })
+          } as never)
           .select('id')
-          .single()
+          .single() as unknown as { data: { id: string } | null; error: { message: string } | null }
 
         if (dayError || !dayRow) {
           toast({
@@ -315,7 +315,7 @@ export function TrainingBuilder({
             rest_seconds: ex.rest_seconds ?? 60,
             notes: ex.notes || null,
             sort_order: j,
-          })
+          } as never)
 
           if (exError) {
             toast({

@@ -100,6 +100,6 @@ ToastClose.displayName = 'ToastClose'
 
 export {
   type ToastProps,
-  type ToastActionElement,
 } from '@radix-ui/react-toast'
+export type ToastActionElement = React.ReactElement
 export { ToastProvider, ToastViewport, Toast, ToastTitle, ToastDescription, ToastClose }

@@ -31,7 +31,7 @@ const registerSchema = z
     password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
     confirm_password: z.string(),
     profession: z.enum(['educacao_fisica', 'fisioterapia', 'nutricao'], {
-      required_error: 'Selecione sua profissão',
+      error: 'Selecione sua profissão',
     }),
     registration_number: z.string().min(3, 'Número de registro é obrigatório'),
   })

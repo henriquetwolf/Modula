@@ -39,7 +39,7 @@ const schema = z.object({
   start_time: z.string().min(1, 'Horário de início é obrigatório'),
   end_time: z.string().min(1, 'Horário de fim é obrigatório'),
   type: z.enum(['individual', 'evaluation', 'follow_up'], {
-    errorMap: () => ({ message: 'Tipo inválido' }),
+    error: 'Tipo inválido',
   }),
   notes: z.string().optional(),
 })
@@ -88,7 +88,7 @@ export function AppointmentDialog({
   const defaultEndTime = time
     ? (() => {
         const [h, m] = time.split(':').map(Number)
-        const start = setMinutes(setHours(new Date(), h, m), 0)
+        const start = setMinutes(setHours(new Date(), h), m)
         return format(addMinutes(start, 60), 'HH:mm')
       })()
     : '10:00'
@@ -179,8 +179,8 @@ export function AppointmentDialog({
       const duration = Math.max(1, differenceInMinutes(endDate, startDate))
 
       if (isEdit && appointment) {
-        const { error } = await supabase
-          .from('appointments')
+        const { error } = await (supabase
+          .from('appointments') as any)
           .update({
             client_id: data.client_id,
             starts_at: startDate.toISOString(),
@@ -193,7 +193,7 @@ export function AppointmentDialog({
 
         if (error) throw error
       } else {
-        const { error } = await supabase.from('appointments').insert({
+        const { error } = await (supabase.from('appointments') as any).insert({
           tenant_id: tenantId,
           unit_id: unitId,
           client_id: data.client_id,
@@ -205,7 +205,7 @@ export function AppointmentDialog({
           duration_minutes: duration,
           notes: data.notes || null,
           created_by: userId,
-        } as Record<string, unknown>)
+        })
 
         if (error) throw error
       }

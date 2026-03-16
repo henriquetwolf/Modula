@@ -148,7 +148,7 @@ export function PaymentDialog({
         description: data.description || null,
         due_date: data.due_date,
         created_by: userId ?? null,
-      } as Record<string, unknown>)
+      } as never)
 
       if (error) throw error
       onOpenChange(false)

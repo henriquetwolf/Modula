@@ -111,7 +111,7 @@ export async function POST(request: Request) {
       .from('user_profiles')
       .select('id, tenant_id')
       .eq('auth_user_id', user.id)
-      .maybeSingle()
+      .maybeSingle() as unknown as { data: { id: string; tenant_id: string } | null }
 
     if (existingProfile) {
       return NextResponse.json({
@@ -136,8 +136,8 @@ export async function POST(request: Request) {
       finalTenantSlug = `${baseSlug}-${suffix}`
     }
 
-    const { data: tenant, error: tenantError } = await serviceClient
-      .from('tenants')
+    const { data: tenant, error: tenantError } = await (serviceClient
+      .from('tenants') as any)
       .insert({
         name: business_name,
         slug: finalTenantSlug,
@@ -150,7 +150,7 @@ export async function POST(request: Request) {
         metadata: {},
       })
       .select('id')
-      .single()
+      .single() as unknown as { data: { id: string } | null; error: { message?: string } | null }
 
     if (tenantError || !tenant) {
       console.error('Erro ao criar tenant:', tenantError)
@@ -160,8 +160,8 @@ export async function POST(request: Request) {
       )
     }
 
-    const { data: company, error: companyError } = await serviceClient
-      .from('companies')
+    const { data: company, error: companyError } = await (serviceClient
+      .from('companies') as any)
       .insert({
         tenant_id: tenant.id,
         name: business_name,
@@ -172,7 +172,7 @@ export async function POST(request: Request) {
         metadata: {},
       })
       .select('id')
-      .single()
+      .single() as unknown as { data: { id: string } | null; error: { message?: string } | null }
 
     if (companyError || !company) {
       console.error('Erro ao criar company:', companyError)
@@ -197,8 +197,8 @@ export async function POST(request: Request) {
       finalUnitSlug = `${unitSlugBase}-${unitSuffix}`
     }
 
-    const { data: unit, error: unitError } = await serviceClient
-      .from('units')
+    const { data: unit, error: unitError } = await (serviceClient
+      .from('units') as any)
       .insert({
         tenant_id: tenant.id,
         company_id: company.id,
@@ -212,7 +212,7 @@ export async function POST(request: Request) {
         metadata: {},
       })
       .select('id')
-      .single()
+      .single() as unknown as { data: { id: string } | null; error: { message?: string } | null }
 
     if (unitError || !unit) {
       console.error('Erro ao criar unit:', unitError)
@@ -231,8 +231,8 @@ export async function POST(request: Request) {
       : 'ef'
     const registrationState = (state?.length === 2 ? state : null) ?? null
 
-    const { data: userProfile, error: profileError } = await serviceClient
-      .from('user_profiles')
+    const { data: userProfile, error: profileError } = await (serviceClient
+      .from('user_profiles') as any)
       .insert({
         auth_user_id: user.id,
         tenant_id: tenant.id,
@@ -244,7 +244,7 @@ export async function POST(request: Request) {
         metadata: {},
       })
       .select('id')
-      .single()
+      .single() as unknown as { data: { id: string } | null; error: { message?: string } | null }
 
     if (profileError || !userProfile) {
       console.error('Erro ao criar user_profile:', profileError)
@@ -255,8 +255,8 @@ export async function POST(request: Request) {
     }
 
     if (registration) {
-      const { error: profError } = await serviceClient
-        .from('professional_profiles')
+      const { error: profError } = await (serviceClient
+        .from('professional_profiles') as any)
         .insert({
           user_id: userProfile.id,
           tenant_id: tenant.id,
@@ -275,8 +275,8 @@ export async function POST(request: Request) {
       }
     }
 
-    const { error: membershipError } = await serviceClient
-      .from('unit_memberships')
+    const { error: membershipError } = await (serviceClient
+      .from('unit_memberships') as any)
       .insert({
         user_id: userProfile.id,
         unit_id: unit.id,
@@ -302,10 +302,10 @@ export async function POST(request: Request) {
       .eq('name', 'owner')
       .eq('is_system', true)
       .limit(1)
-      .single()
+      .single() as unknown as { data: { id: string } | null }
 
     if (ownerRole) {
-      await serviceClient.from('user_roles').insert({
+      await (serviceClient.from('user_roles') as any).insert({
         user_id: userProfile.id,
         role_id: ownerRole.id,
         tenant_id: tenant.id,
@@ -315,8 +315,8 @@ export async function POST(request: Request) {
     }
 
     for (const code of CORE_MODULES) {
-      const { error: entError } = await serviceClient
-        .from('module_entitlements')
+      const { error: entError } = await (serviceClient
+        .from('module_entitlements') as any)
         .upsert(
           {
             tenant_id: tenant.id,

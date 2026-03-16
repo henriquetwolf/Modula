@@ -14,7 +14,7 @@ export default async function NewEvaluationPage() {
     .from('user_profiles')
     .select('id, tenant_id')
     .eq('auth_user_id', user.id)
-    .single()
+    .single() as unknown as { data: { id: string; tenant_id: string } | null }
 
   if (!profile) {
     redirect('/onboarding')
@@ -25,14 +25,14 @@ export default async function NewEvaluationPage() {
     .select('id')
     .eq('tenant_id', profile.tenant_id)
     .limit(1)
-    .single()
+    .single() as unknown as { data: { id: string } | null }
 
   const { data: clients = [] } = await supabase
     .from('client_profiles')
     .select('id, full_name')
     .eq('tenant_id', profile.tenant_id)
     .eq('status', 'active')
-    .order('full_name')
+    .order('full_name') as unknown as { data: { id: string; full_name: string }[] | null }
 
   return (
     <div className="space-y-6">

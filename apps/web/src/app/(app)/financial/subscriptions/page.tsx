@@ -16,7 +16,7 @@ export default async function SubscriptionsPage() {
     .from('user_profiles')
     .select('id, tenant_id')
     .eq('auth_user_id', user.id)
-    .single()
+    .single() as unknown as { data: { id: string; tenant_id: string } | null }
 
   if (!profile) {
     redirect('/onboarding')
@@ -27,7 +27,7 @@ export default async function SubscriptionsPage() {
     .select('id')
     .eq('tenant_id', profile.tenant_id)
     .limit(1)
-    .single()
+    .single() as unknown as { data: { id: string } | null }
 
   const tenantId = profile.tenant_id
   const unitId = unit?.id ?? ''
@@ -45,9 +45,9 @@ export default async function SubscriptionsPage() {
     )
     .eq('tenant_id', tenantId)
     .eq('status', 'active')
-    .order('starts_at', { ascending: false })
+    .order('starts_at', { ascending: false }) as unknown as { data: Record<string, unknown>[] | null }
 
-  const subscriptions: SubscriptionWithClient[] = (subscriptionsData ?? []).map(
+  const subscriptions = (subscriptionsData ?? []).map(
     (s: { client_profiles?: { full_name: string }; [key: string]: unknown }) => {
       const client = s.client_profiles as unknown as { full_name: string }
       return {
@@ -56,7 +56,7 @@ export default async function SubscriptionsPage() {
         client: { full_name: client.full_name },
       }
     }
-  )
+  ) as unknown as SubscriptionWithClient[]
 
   return (
     <div className="space-y-6">

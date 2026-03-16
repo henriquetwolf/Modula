@@ -25,7 +25,7 @@ export default async function FinancialPage() {
     .from('user_profiles')
     .select('id, tenant_id')
     .eq('auth_user_id', user.id)
-    .single()
+    .single() as unknown as { data: { id: string; tenant_id: string } | null }
 
   if (!profile) {
     redirect('/onboarding')
@@ -36,7 +36,7 @@ export default async function FinancialPage() {
     .select('id')
     .eq('tenant_id', profile.tenant_id)
     .limit(1)
-    .single()
+    .single() as unknown as { data: { id: string } | null }
 
   const tenantId = profile.tenant_id
   const unitId = unit?.id ?? ''
@@ -51,7 +51,7 @@ export default async function FinancialPage() {
     { data: pendingRows },
     { data: overdueRows },
     { count: activeSubsCount },
-  ] = await Promise.all([
+  ] = (await Promise.all([
     supabase
       .from('payments')
       .select(
@@ -86,7 +86,13 @@ export default async function FinancialPage() {
       .select('id', { count: 'exact', head: true })
       .eq('tenant_id', tenantId)
       .eq('status', 'active'),
-  ])
+  ])) as unknown as [
+    { data: Record<string, unknown>[] | null },
+    { data: { amount_cents?: number }[] | null },
+    { data: { amount_cents?: number }[] | null },
+    { data: { amount_cents?: number }[] | null },
+    { count: number | null },
+  ]
 
   const monthlyRevenue = (paidRows ?? []).reduce(
     (s: number, r: { amount_cents?: number }) => s + (r.amount_cents ?? 0),
@@ -101,14 +107,14 @@ export default async function FinancialPage() {
     0
   )
 
-  const payments: PaymentWithClient[] = (paymentsData ?? []).map((p: { client_profiles?: { full_name: string }; [key: string]: unknown }) => {
+  const payments = (paymentsData ?? []).map((p: { client_profiles?: { full_name: string }; [key: string]: unknown }) => {
     const client = p.client_profiles as unknown as { full_name: string }
     return {
       ...p,
       client_profiles: undefined,
       client: { full_name: client.full_name },
     }
-  })
+  }) as unknown as PaymentWithClient[]
 
   const kpis = [
     {

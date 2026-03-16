@@ -43,7 +43,7 @@ export default async function EvaluationDetailPage({ params }: EvaluationPagePro
     `
     )
     .eq('id', id)
-    .single()
+    .single() as unknown as { data: Record<string, unknown> | null; error: unknown }
 
   if (error || !row) {
     redirect('/evaluations')
@@ -57,13 +57,13 @@ export default async function EvaluationDetailPage({ params }: EvaluationPagePro
     full_name: string
   }
 
-  const evaluation: EvaluationWithRelations = {
-    ...row,
+  const evaluation = {
+    ...(row as Record<string, unknown>),
     client_profiles: undefined,
     user_profiles: undefined,
     client: client ?? { full_name: '—', avatar_url: null },
     professional: professional ?? { full_name: '—' },
-  } as EvaluationWithRelations
+  } as unknown as EvaluationWithRelations
 
   return (
     <div className="space-y-6">

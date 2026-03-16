@@ -179,7 +179,7 @@ export function SubscriptionDialog({
 
       const { error } = await supabase
         .from('client_subscriptions')
-        .insert(payload)
+        .insert(payload as never)
 
       if (error) throw error
       onOpenChange(false)

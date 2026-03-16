@@ -73,7 +73,7 @@ export function PaymentList({ payments }: PaymentListProps) {
       const supabase = getSupabaseBrowser()
       const { error } = await supabase
         .from('payments')
-        .update({ status: 'paid', paid_at: new Date().toISOString() })
+        .update({ status: 'paid', paid_at: new Date().toISOString() } as never)
         .eq('id', payment.id)
 
       if (error) throw error
@@ -102,7 +102,7 @@ export function PaymentList({ payments }: PaymentListProps) {
       const supabase = getSupabaseBrowser()
       const { error } = await supabase
         .from('payments')
-        .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
+        .update({ status: 'cancelled', cancelled_at: new Date().toISOString() } as never)
         .eq('id', payment.id)
 
       if (error) throw error

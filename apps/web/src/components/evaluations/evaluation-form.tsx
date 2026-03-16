@@ -139,7 +139,7 @@ export function EvaluationForm({
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<EvaluationFormData>({
-    resolver: zodResolver(evaluationFormSchema),
+    resolver: zodResolver(evaluationFormSchema) as never,
     defaultValues: {
       client_id: evaluation?.client_id ?? '',
       evaluation_date: evaluation?.scheduled_at
@@ -255,17 +255,17 @@ export function EvaluationForm({
       if (evaluation?.id) {
         const { error: updateErr } = await supabase
           .from('evaluations')
-          .update(payload)
+          .update(payload as never)
           .eq('id', evaluation.id)
         if (updateErr) throw updateErr
         router.push(`/evaluations/${evaluation.id}`)
       } else {
         const { data: inserted, error: insertErr } = await supabase
           .from('evaluations')
-          .insert(payload)
+          .insert(payload as never)
           .select('id')
-          .single()
-        if (insertErr) throw insertErr
+          .single() as unknown as { data: { id: string } | null; error: unknown }
+        if (insertErr || !inserted) throw insertErr ?? new Error('Falha ao criar avaliação')
         router.push(`/evaluations/${inserted.id}`)
       }
       router.refresh()
