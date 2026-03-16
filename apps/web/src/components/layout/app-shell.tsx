@@ -46,6 +46,7 @@ import {
   ClipboardList,
   Trophy,
   School,
+  Crown,
 } from 'lucide-react'
 import { getSupabaseBrowser } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -65,6 +66,12 @@ import { getInitials } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
 const NAV_SECTIONS: SidebarNavSection[] = [
+  {
+    title: 'Admin Master',
+    items: [
+      { label: 'Painel Admin', href: '/admin', icon: Crown },
+    ],
+  },
   {
     title: 'Principal',
     items: [
@@ -161,6 +168,7 @@ const NAV_SECTIONS: SidebarNavSection[] = [
 ]
 
 const PAGE_TITLES: Record<string, string> = {
+  '/admin': 'Admin Master',
   '/dashboard': 'Dashboard',
   '/portal': 'Portal do Cliente',
   '/clients': 'Clientes',
