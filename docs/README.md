@@ -18,6 +18,7 @@
 | 07 | [Integrations](./07-integrations.md) | Mapa completo de integracoes externas com recomendacoes e prioridades |
 | 08 | [UX Architecture](./08-ux-architecture.md) | Navegacao adaptativa, dashboards por perfil, ficha 360, mapa de paginas |
 | 09 | [Roadmap](./09-roadmap.md) | MVP, roadmap faseado, fluxos end-to-end, riscos, tradeoffs, metricas |
+| 10 | [Student Architecture](./10-student-architecture.md) | Arquitetura completa do Modula Health Student: modulos, billing, permissoes, IA, pesquisa cientifica, UX, dominio e migracao para profissional |
 
 ---
 
@@ -25,9 +26,9 @@
 
 | Metrica | Valor |
 |---------|-------|
-| Modulos totais | 55 |
+| Modulos totais | 64 (55 pro + 9 student) |
 | Core obrigatorio | 11 |
-| Modulos compraveis | 44 |
+| Modulos compraveis | 44 pro + 9 student |
 | Funcionalidades | ~950+ |
 | Entidades de dominio | ~120+ |
 | Eventos de dominio | ~180+ |
