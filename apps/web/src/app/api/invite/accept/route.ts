@@ -12,7 +12,7 @@ export async function POST(request: Request) {
 
     const service = getServiceClient()
 
-    const { data: invitation } = await service
+    const { data: invitation } = await (service as any)
       .from('invitations')
       .select('*')
       .eq('token', token)
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     const inv = invitation as Record<string, unknown>
 
     if (inv.expires_at && new Date(inv.expires_at as string) < new Date()) {
-      await service
+      await (service as any)
         .from('invitations')
         .update({ status: 'expired' })
         .eq('id', inv.id as string)
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const { data: role } = await service
+    const { data: role } = await (service as any)
       .from('roles')
       .select('id')
       .or(`and(name.eq.${inv.role_name},is_system.eq.true),and(name.eq.${inv.role_name},tenant_id.eq.${inv.tenant_id})`)
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
       .single()
 
     if (role) {
-      await service.from('user_roles').upsert({
+      await (service as any).from('user_roles').upsert({
         user_id: profile.id,
         role_id: role.id,
         tenant_id: inv.tenant_id as string,
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
       })
     }
 
-    await service
+    await (service as any)
       .from('invitations')
       .update({ status: 'accepted' })
       .eq('id', inv.id as string)
