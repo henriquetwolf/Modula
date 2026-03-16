@@ -35,6 +35,17 @@ import {
   Flame,
   ArrowRightLeft,
   GraduationCap,
+  Hospital,
+  LineChart,
+  Award,
+  Video,
+  Pill,
+  Briefcase,
+  BookOpen,
+  Layers,
+  ClipboardList,
+  Trophy,
+  School,
 } from 'lucide-react'
 import { getSupabaseBrowser } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -70,8 +81,10 @@ const NAV_SECTIONS: SidebarNavSection[] = [
       { label: 'Financeiro', href: '/financial', icon: DollarSign },
       { label: 'Avaliações', href: '/evaluations', icon: ClipboardCheck },
       { label: 'Treinos', href: '/training', icon: Dumbbell },
+      { label: 'Performance', href: '/ef/performance', icon: Trophy },
       { label: 'Monitoramento', href: '/monitoring', icon: Activity },
       { label: 'Espaços', href: '/facility', icon: Building2 },
+      { label: 'EF Escolar', href: '/ef/school', icon: School },
       { label: 'Documentos', href: '/documents', icon: FileText },
       { label: 'Analytics', href: '/analytics', icon: BarChart3 },
     ],
@@ -83,6 +96,10 @@ const NAV_SECTIONS: SidebarNavSection[] = [
       { label: 'Plano Terapêutico', href: '/fisio/treatment', icon: HeartPulse },
       { label: 'Exercícios Fisio', href: '/fisio/exercises', icon: Activity },
       { label: 'Evolução Clínica', href: '/fisio/progress', icon: TrendingUp },
+      { label: 'Clínica Fisio', href: '/fisio/clinic', icon: Hospital },
+      { label: 'Desfechos', href: '/fisio/outcomes', icon: LineChart },
+      { label: 'Especialidades', href: '/fisio/specialties', icon: Award },
+      { label: 'Tele Fisio', href: '/fisio/remote', icon: Video },
     ],
   },
   {
@@ -91,6 +108,11 @@ const NAV_SECTIONS: SidebarNavSection[] = [
       { label: 'Avaliação Nutri', href: '/nutri/evaluation', icon: Apple },
       { label: 'Plano Alimentar', href: '/nutri/mealplan', icon: UtensilsCrossed },
       { label: 'Evolução Nutri', href: '/nutri/progress', icon: TrendingUp },
+      { label: 'Consultório', href: '/nutri/office', icon: Briefcase },
+      { label: 'Desfechos Nutri', href: '/nutri/outcomes', icon: LineChart },
+      { label: 'Suplementos', href: '/nutri/supplements', icon: Pill },
+      { label: 'Especialidades', href: '/nutri/specialties', icon: Award },
+      { label: 'Tele Nutri', href: '/nutri/remote', icon: Video },
     ],
   },
   {
@@ -98,6 +120,9 @@ const NAV_SECTIONS: SidebarNavSection[] = [
     items: [
       { label: 'Hábitos & Adesão', href: '/habits', icon: Flame },
       { label: 'Encaminhamentos', href: '/referrals', icon: ArrowRightLeft },
+      { label: 'Avaliação Integrada', href: '/multi/evaluation', icon: ClipboardList },
+      { label: 'Biblioteca', href: '/multi/library', icon: BookOpen },
+      { label: 'Plano de Cuidado', href: '/multi/careplan', icon: Layers },
     ],
   },
   {
@@ -168,6 +193,20 @@ const PAGE_TITLES: Record<string, string> = {
   '/habits': 'Hábitos & Adesão',
   '/referrals': 'Encaminhamentos',
   '/education': 'Educação',
+  '/fisio/clinic': 'Clínica Fisioterapêutica',
+  '/fisio/outcomes': 'Desfechos Clínicos',
+  '/fisio/specialties': 'Especialidades Fisio',
+  '/fisio/remote': 'Tele Fisioterapia',
+  '/nutri/outcomes': 'Desfechos Nutricionais',
+  '/nutri/office': 'Consultório Nutricional',
+  '/nutri/supplements': 'Suplementos',
+  '/nutri/specialties': 'Especialidades Nutri',
+  '/nutri/remote': 'Tele Nutrição',
+  '/multi/evaluation': 'Avaliação Integrada',
+  '/multi/library': 'Biblioteca de Conteúdo',
+  '/multi/careplan': 'Plano de Cuidado',
+  '/ef/performance': 'Performance Esportiva',
+  '/ef/school': 'EF Escolar',
 }
 
 function getPageTitle(pathname: string): string {

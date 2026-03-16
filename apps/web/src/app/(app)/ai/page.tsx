@@ -19,8 +19,172 @@ import {
   FileCheck,
   Target,
   BarChart2,
+  Dumbbell,
+  Bone,
+  Apple,
+  Briefcase,
+  Wrench,
+  GraduationCap,
+  type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+type CopilotMode =
+  | 'geral'
+  | 'ef'
+  | 'fisio'
+  | 'nutri'
+  | 'analytics'
+  | 'comercial'
+  | 'operacional'
+  | 'multi'
+  | 'tutor'
+
+const MODE_CONFIG: Record<
+  CopilotMode,
+  { label: string; emoji: string; prompts: string[] }
+> = {
+  geral: {
+    label: 'Geral',
+    emoji: '🤖',
+    prompts: [
+      'Resumo do dia',
+      'Clientes com risco de churn',
+      'Sugestões de melhoria',
+    ],
+  },
+  ef: {
+    label: 'Educação Física',
+    emoji: '💪',
+    prompts: [
+      'Sugerir treino para hipertrofia',
+      'Análise de periodização',
+      'Progressão de cargas',
+    ],
+  },
+  fisio: {
+    label: 'Fisioterapia',
+    emoji: '🦴',
+    prompts: [
+      'Protocolo para lombalgia',
+      'Avaliação funcional',
+      'Exercícios pós-operatório',
+    ],
+  },
+  nutri: {
+    label: 'Nutrição',
+    emoji: '🍎',
+    prompts: [
+      'Plano para diabetes',
+      'Substituição alimentar',
+      'Calcular necessidade calórica',
+    ],
+  },
+  analytics: {
+    label: 'Analytics',
+    emoji: '📊',
+    prompts: [
+      'Relatório mensal',
+      'Métricas de retenção',
+      'Previsão de receita',
+    ],
+  },
+  comercial: {
+    label: 'Comercial',
+    emoji: '💼',
+    prompts: [
+      'Leads qualificados',
+      'Estratégia de upsell',
+      'Campanha de reengajamento',
+    ],
+  },
+  operacional: {
+    label: 'Operacional',
+    emoji: '🔧',
+    prompts: [
+      'Otimizar agenda',
+      'Escalas da semana',
+      'Controle de estoque',
+    ],
+  },
+  multi: {
+    label: 'Multidisciplinar',
+    emoji: '👥',
+    prompts: [
+      'Plano integrado para paciente',
+      'Reunião de equipe',
+      'Consenso terapêutico',
+    ],
+  },
+  tutor: {
+    label: 'Tutor',
+    emoji: '🎓',
+    prompts: [
+      'Explicar conceito de propriocepção',
+      'Quiz sobre anatomia',
+      'Caso clínico para discussão',
+    ],
+  },
+}
+
+const INSIGHTS_BY_MODE: Record<
+  CopilotMode,
+  Array<{
+    icon: LucideIcon
+    iconBg: string
+    iconColor: string
+    title: string
+    description: string
+    action: string
+  }>
+> = {
+  geral: [
+    { icon: Users, iconBg: 'bg-red-500/20', iconColor: 'text-red-600', title: '3 clientes com risco de abandono', description: 'Clientes sem agendamento há +14 dias', action: 'Ver clientes' },
+    { icon: Clock, iconBg: 'bg-amber-500/20', iconColor: 'text-amber-600', title: 'Horário ocioso detectado', description: 'Terças 11h-12h sem agendamentos há 4 semanas', action: 'Ver agenda' },
+    { icon: Target, iconBg: 'bg-blue-500/20', iconColor: 'text-blue-600', title: 'Oportunidade de upsell', description: '8 clientes de EF podem se beneficiar de avaliação nutricional', action: 'Sugerir avaliação' },
+    { icon: FileCheck, iconBg: 'bg-red-500/20', iconColor: 'text-red-600', title: 'Avaliação vencida', description: '5 clientes com avaliação física vencida (+90 dias)', action: 'Agendar avaliação' },
+  ],
+  ef: [
+    { icon: Dumbbell, iconBg: 'bg-emerald-500/20', iconColor: 'text-emerald-600', title: 'Periodização em revisão', description: '3 clientes precisam de novo mesociclo', action: 'Ver planos' },
+    { icon: Target, iconBg: 'bg-blue-500/20', iconColor: 'text-blue-600', title: 'Testes pendentes', description: '4 avaliações físicas agendadas esta semana', action: 'Ver agenda' },
+    { icon: TrendingUp, iconBg: 'bg-violet-500/20', iconColor: 'text-violet-600', title: 'Progressão de cargas', description: 'Clientes prontos para aumento de intensidade', action: 'Sugerir progressão' },
+  ],
+  fisio: [
+    { icon: Bone, iconBg: 'bg-blue-500/20', iconColor: 'text-blue-600', title: 'Alta pendente', description: '2 pacientes concluíram protocolo', action: 'Revisar altas' },
+    { icon: FileCheck, iconBg: 'bg-amber-500/20', iconColor: 'text-amber-600', title: 'SOAP incompleto', description: '3 sessões sem registro esta semana', action: 'Completar registros' },
+    { icon: Target, iconBg: 'bg-emerald-500/20', iconColor: 'text-emerald-600', title: 'Reavaliação programada', description: 'Lombalgia - João Oliveira em 5 dias', action: 'Ver detalhes' },
+  ],
+  nutri: [
+    { icon: Apple, iconBg: 'bg-amber-500/20', iconColor: 'text-amber-600', title: 'Diários alimentares pendentes', description: '6 clientes não enviaram esta semana', action: 'Enviar lembrete' },
+    { icon: FileCheck, iconBg: 'bg-blue-500/20', iconColor: 'text-blue-600', title: 'Planos para renovar', description: '3 planos alimentares vencem em 15 dias', action: 'Agendar retorno' },
+    { icon: Target, iconBg: 'bg-emerald-500/20', iconColor: 'text-emerald-600', title: 'Metas de peso', description: '4 clientes atingiram meta do mês', action: 'Celebrar conquistas' },
+  ],
+  analytics: [
+    { icon: BarChart2, iconBg: 'bg-violet-500/20', iconColor: 'text-violet-600', title: 'Receita mensal', description: '+12% em relação a fevereiro', action: 'Ver relatório' },
+    { icon: TrendingUp, iconBg: 'bg-emerald-500/20', iconColor: 'text-emerald-600', title: 'Taxa de retenção', description: '89% nos últimos 90 dias', action: 'Análise detalhada' },
+    { icon: Users, iconBg: 'bg-blue-500/20', iconColor: 'text-blue-600', title: 'Novos clientes', description: '15 cadastros em março', action: 'Ver perfil' },
+  ],
+  comercial: [
+    { icon: Target, iconBg: 'bg-emerald-500/20', iconColor: 'text-emerald-600', title: 'Leads quentes', description: '5 leads prontos para conversão', action: 'Ver leads' },
+    { icon: TrendingUp, iconBg: 'bg-blue-500/20', iconColor: 'text-blue-600', title: 'Upsell potencial', description: '8 clientes candidatos a pacote premium', action: 'Sugerir oferta' },
+    { icon: Users, iconBg: 'bg-amber-500/20', iconColor: 'text-amber-600', title: 'Reengajamento', description: '12 ex-clientes há 6+ meses sem retorno', action: 'Campanha' },
+  ],
+  operacional: [
+    { icon: Clock, iconBg: 'bg-amber-500/20', iconColor: 'text-amber-600', title: 'Horários ociosos', description: 'Terças 11h-12h livres há 4 semanas', action: 'Otimizar agenda' },
+    { icon: Wrench, iconBg: 'bg-blue-500/20', iconColor: 'text-blue-600', title: 'Manutenção pendente', description: '2 equipamentos com revisão atrasada', action: 'Agendar' },
+    { icon: Users, iconBg: 'bg-emerald-500/20', iconColor: 'text-emerald-600', title: 'Escala da semana', description: '2 folgas programadas', action: 'Ver escala' },
+  ],
+  multi: [
+    { icon: Users, iconBg: 'bg-violet-500/20', iconColor: 'text-violet-600', title: 'Reuniões de equipe', description: '2 casos para discussão esta semana', action: 'Agendar' },
+    { icon: Target, iconBg: 'bg-emerald-500/20', iconColor: 'text-emerald-600', title: 'Planos integrados', description: '3 planos em fase de consenso', action: 'Ver planos' },
+    { icon: FileCheck, iconBg: 'bg-blue-500/20', iconColor: 'text-blue-600', title: 'Avaliações multidisciplinares', description: '1 avaliação agendada para quinta', action: 'Preparar' },
+  ],
+  tutor: [
+    { icon: GraduationCap, iconBg: 'bg-violet-500/20', iconColor: 'text-violet-600', title: 'Módulos sugeridos', description: 'Propriocepção e equilíbrio', action: 'Estudar' },
+    { icon: FileCheck, iconBg: 'bg-blue-500/20', iconColor: 'text-blue-600', title: 'Casos para prática', description: '3 casos clínicos disponíveis', action: 'Explorar' },
+    { icon: Target, iconBg: 'bg-emerald-500/20', iconColor: 'text-emerald-600', title: 'Quiz semanal', description: 'Anatomia do joelho', action: 'Iniciar' },
+  ],
+}
 
 const MOCK_CHAT = [
   {
@@ -42,82 +206,6 @@ const MOCK_CHAT = [
     id: '4',
     role: 'ai',
     text: 'Mensagem de reengajamento enviada para os 3 clientes via WhatsApp usando o template \'Saudades\'. Posso ajudar com algo mais?',
-  },
-]
-
-const SUGGESTED_PROMPTS = [
-  'Resumo do meu dia',
-  'Clientes com risco de churn',
-  'Sugestão de treino para...',
-  'Análise da receita mensal',
-]
-
-const INSIGHTS = [
-  {
-    id: '1',
-    icon: Users,
-    iconBg: 'bg-red-500/20',
-    iconColor: 'text-red-600',
-    priority: 'Alta' as const,
-    priorityColor: 'bg-red-500/20 text-red-700 border-red-200',
-    title: '3 clientes com risco de abandono',
-    description: 'Clientes sem agendamento há +14 dias',
-    action: 'Ver clientes',
-  },
-  {
-    id: '2',
-    icon: Clock,
-    iconBg: 'bg-amber-500/20',
-    iconColor: 'text-amber-600',
-    priority: 'Média' as const,
-    priorityColor: 'bg-amber-500/20 text-amber-700 border-amber-200',
-    title: 'Horário ocioso detectado',
-    description: 'Terças 11h-12h sem agendamentos há 4 semanas',
-    action: 'Ver agenda',
-  },
-  {
-    id: '3',
-    icon: Target,
-    iconBg: 'bg-blue-500/20',
-    iconColor: 'text-blue-600',
-    priority: 'Média' as const,
-    priorityColor: 'bg-blue-500/20 text-blue-700 border-blue-200',
-    title: 'Oportunidade de upsell',
-    description: '8 clientes de EF podem se beneficiar de avaliação nutricional',
-    action: 'Sugerir avaliação',
-  },
-  {
-    id: '4',
-    icon: FileCheck,
-    iconBg: 'bg-red-500/20',
-    iconColor: 'text-red-600',
-    priority: 'Alta' as const,
-    priorityColor: 'bg-red-500/20 text-red-700 border-red-200',
-    title: 'Avaliação vencida',
-    description: '5 clientes com avaliação física vencida (+90 dias)',
-    action: 'Agendar avaliação',
-  },
-  {
-    id: '5',
-    icon: TrendingUp,
-    iconBg: 'bg-emerald-500/20',
-    iconColor: 'text-emerald-600',
-    priority: 'Baixa' as const,
-    priorityColor: 'bg-emerald-500/20 text-emerald-700 border-emerald-200',
-    title: 'Meta mensal próxima',
-    description: 'Faltam R$ 2.300 para bater meta de março',
-    action: 'Ver detalhes',
-  },
-  {
-    id: '6',
-    icon: BarChart2,
-    iconBg: 'bg-violet-500/20',
-    iconColor: 'text-violet-600',
-    priority: 'Média' as const,
-    priorityColor: 'bg-violet-500/20 text-violet-700 border-violet-200',
-    title: 'Padrão identificado',
-    description: 'Clientes que fazem check-in semanal têm 3x mais retenção',
-    action: 'Ver análise',
   },
 ]
 
@@ -158,6 +246,7 @@ function ToggleSwitch({
 }
 
 export default function AiPage() {
+  const [mode, setMode] = useState<CopilotMode>('geral')
   const [inputValue, setInputValue] = useState('')
   const [settings, setSettings] = useState<Record<string, boolean>>({
     suggestions: true,
@@ -166,6 +255,9 @@ export default function AiPage() {
     prescription: false,
     summary: true,
   })
+
+  const config = MODE_CONFIG[mode]
+  const insights = INSIGHTS_BY_MODE[mode]
 
   return (
     <div className="space-y-6">
@@ -182,6 +274,21 @@ export default function AiPage() {
           </div>
         </CardContent>
       </Card>
+
+      <div className="flex flex-wrap gap-2">
+        {(Object.keys(MODE_CONFIG) as CopilotMode[]).map((m) => (
+          <Button
+            key={m}
+            variant={mode === m ? 'default' : 'outline'}
+            size="sm"
+            className="h-9"
+            onClick={() => setMode(m)}
+          >
+            <span className="mr-1.5">{MODE_CONFIG[m].emoji}</span>
+            {MODE_CONFIG[m].label}
+          </Button>
+        ))}
+      </div>
 
       <Tabs defaultValue="assistente" className="space-y-4">
         <TabsList className="grid w-full max-w-md grid-cols-3">
@@ -200,6 +307,11 @@ export default function AiPage() {
         </TabsList>
 
         <TabsContent value="assistente" className="space-y-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Badge variant="secondary" className="font-normal">
+              {config.emoji} Copiloto {config.label}
+            </Badge>
+          </div>
           <Card>
             <CardContent className="p-0">
               <div className="flex h-[320px] flex-col overflow-hidden">
@@ -239,7 +351,7 @@ export default function AiPage() {
                     </Button>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {SUGGESTED_PROMPTS.map((prompt) => (
+                    {config.prompts.map((prompt) => (
                       <Button
                         key={prompt}
                         variant="outline"
@@ -259,12 +371,12 @@ export default function AiPage() {
 
         <TabsContent value="insights" className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {INSIGHTS.map((insight) => {
+            {insights.map((insight, i) => {
               const Icon = insight.icon
               return (
-                <Card key={insight.id} className="overflow-hidden">
+                <Card key={i} className="overflow-hidden">
                   <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2">
                       <div
                         className={cn(
                           'flex h-9 w-9 items-center justify-center rounded-full',
@@ -274,14 +386,8 @@ export default function AiPage() {
                       >
                         <Icon className="h-4 w-4" />
                       </div>
-                      <Badge
-                        variant="outline"
-                        className={cn('shrink-0 text-xs', insight.priorityColor)}
-                      >
-                        {insight.priority}
-                      </Badge>
+                      <CardTitle className="text-base mt-0">{insight.title}</CardTitle>
                     </div>
-                    <CardTitle className="text-base mt-2">{insight.title}</CardTitle>
                   </CardHeader>
                   <CardContent className="pt-0">
                     <p className="text-sm text-muted-foreground mb-3">
