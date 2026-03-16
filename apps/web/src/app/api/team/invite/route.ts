@@ -10,10 +10,11 @@ export async function GET() {
     const { error, profile, service } = await requireOwnerOrAdmin(user.id)
     if (error || !profile) return jsonError(error ?? 'Erro.', 403)
 
-    const { data: invitations, error: qErr } = await service
+    const profileData = profile as { tenant_id: string }
+    const { data: invitations, error: qErr } = await (service as any)
       .from('invitations')
       .select('*, units(name)')
-      .eq('tenant_id', profile.tenant_id)
+      .eq('tenant_id', profileData.tenant_id)
       .order('created_at', { ascending: false })
 
     if (qErr) return jsonError(qErr.message, 500)
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
     const { error, profile, service } = await requireOwnerOrAdmin(user.id)
     if (error || !profile) return jsonError(error ?? 'Erro.', 403)
 
+    const profileData = profile as { id: string; tenant_id: string }
     const body = await request.json()
     const { email, roleName, profession, unitId } = body as {
       email: string
@@ -45,10 +47,10 @@ export async function POST(request: Request) {
       return jsonError('email e roleName obrigatorios.', 400)
     }
 
-    const { data: existing } = await service
+    const { data: existing } = await (service as any)
       .from('invitations')
       .select('id')
-      .eq('tenant_id', profile.tenant_id)
+      .eq('tenant_id', profileData.tenant_id)
       .eq('email', email.trim().toLowerCase())
       .eq('status', 'pending')
       .maybeSingle()
@@ -57,10 +59,10 @@ export async function POST(request: Request) {
       return jsonError('Ja existe um convite pendente para este email.', 409)
     }
 
-    const { data: existingMember } = await service
+    const { data: existingMember } = await (service as any)
       .from('user_profiles')
       .select('id')
-      .eq('tenant_id', profile.tenant_id)
+      .eq('tenant_id', profileData.tenant_id)
       .ilike('email', email.trim())
       .maybeSingle()
 
@@ -72,15 +74,15 @@ export async function POST(request: Request) {
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 7)
 
-    const { data: invitation, error: insertErr } = await service
+    const { data: invitation, error: insertErr } = await (service as any)
       .from('invitations')
       .insert({
-        tenant_id: profile.tenant_id,
+        tenant_id: profileData.tenant_id,
         unit_id: unitId ?? null,
         email: email.trim().toLowerCase(),
         role_name: roleName,
         profession: profession ?? null,
-        invited_by: profile.id,
+        invited_by: profileData.id,
         token,
         status: 'pending',
         expires_at: expiresAt.toISOString(),
@@ -105,15 +107,16 @@ export async function DELETE(request: Request) {
     const { error, profile, service } = await requireOwnerOrAdmin(user.id)
     if (error || !profile) return jsonError(error ?? 'Erro.', 403)
 
+    const profileData = profile as { tenant_id: string }
     const { searchParams } = new URL(request.url)
     const invitationId = searchParams.get('invitationId')
     if (!invitationId) return jsonError('invitationId obrigatorio.', 400)
 
-    const { error: updateErr } = await service
+    const { error: updateErr } = await (service as any)
       .from('invitations')
       .update({ status: 'cancelled' })
       .eq('id', invitationId)
-      .eq('tenant_id', profile.tenant_id)
+      .eq('tenant_id', profileData.tenant_id)
 
     if (updateErr) return jsonError(updateErr.message, 500)
 

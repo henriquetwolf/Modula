@@ -16,16 +16,17 @@ export async function GET() {
 
     if (!profile) return jsonError('Perfil nao encontrado.', 404)
 
-    const { data: systemRoles } = await service
+    const profileData = profile as { tenant_id: string }
+    const { data: systemRoles } = await (service as any)
       .from('roles')
       .select('id, name, display_name, description, is_system, hierarchy_level')
       .eq('is_system', true)
       .order('hierarchy_level', { ascending: false })
 
-    const { data: tenantRoles } = await service
+    const { data: tenantRoles } = await (service as any)
       .from('roles')
       .select('id, name, display_name, description, is_system, hierarchy_level, is_default')
-      .eq('tenant_id', profile.tenant_id)
+      .eq('tenant_id', profileData.tenant_id)
       .order('hierarchy_level', { ascending: false })
 
     const roles = [...(systemRoles ?? []), ...(tenantRoles ?? [])]
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
     const { error, profile, service } = await requireOwnerOrAdmin(user.id)
     if (error || !profile) return jsonError(error ?? 'Erro.', 403)
 
+    const profileData = profile as { tenant_id: string }
     const body = await request.json()
     const { name, displayName, description, hierarchyLevel } = body as {
       name: string
@@ -57,19 +59,19 @@ export async function POST(request: Request) {
 
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '_')
 
-    const { data: existing } = await service
+    const { data: existing } = await (service as any)
       .from('roles')
       .select('id')
-      .eq('tenant_id', profile.tenant_id)
+      .eq('tenant_id', profileData.tenant_id)
       .eq('name', slug)
       .maybeSingle()
 
     if (existing) return jsonError('Ja existe um nivel com este nome.', 409)
 
-    const { data: role, error: insertErr } = await (service
+    const { data: role, error: insertErr } = await ((service as any)
       .from('roles') as unknown as { insert: (data: Record<string, unknown>) => { select: (cols: string) => { single: () => Promise<{ data: Record<string, unknown> | null; error: { message: string } | null }> } } })
       .insert({
-        tenant_id: profile.tenant_id,
+        tenant_id: profileData.tenant_id,
         name: slug,
         display_name: displayName,
         description: description ?? '',

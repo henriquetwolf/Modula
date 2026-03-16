@@ -12,21 +12,23 @@ export async function GET(
     const { error, profile, service } = await requireOwnerOrAdmin(user.id)
     if (error || !profile) return jsonError(error ?? 'Erro.', 403)
 
+    const profileData = profile as { tenant_id: string }
     const { id } = await params
 
-    const { data: role } = await service
+    const { data: role } = await (service as any)
       .from('roles')
       .select('id, name, display_name, description, is_system, hierarchy_level, tenant_id')
       .eq('id', id)
       .single()
 
-    if (!role) return jsonError('Role nao encontrado.', 404)
+    const roleData = role as { tenant_id: string | null } | null
+    if (!roleData) return jsonError('Role nao encontrado.', 404)
 
-    if (role.tenant_id && role.tenant_id !== profile.tenant_id) {
+    if (roleData.tenant_id && roleData.tenant_id !== profileData.tenant_id) {
       return jsonError('Role nao pertence ao seu tenant.', 403)
     }
 
-    const { data: permissions } = await service
+    const { data: permissions } = await (service as any)
       .from('role_permissions')
       .select('id, module_code, resource, actions, conditions')
       .eq('role_id', id)
@@ -49,17 +51,19 @@ export async function PUT(
     const { error, profile, service } = await requireOwnerOrAdmin(user.id)
     if (error || !profile) return jsonError(error ?? 'Erro.', 403)
 
+    const profileData = profile as { tenant_id: string }
     const { id } = await params
 
-    const { data: role } = await service
+    const { data: role } = await (service as any)
       .from('roles')
       .select('id, is_system, tenant_id')
       .eq('id', id)
       .single()
 
-    if (!role) return jsonError('Role nao encontrado.', 404)
-    if (role.is_system) return jsonError('Nao e possivel editar roles de sistema.', 403)
-    if (role.tenant_id !== profile.tenant_id) return jsonError('Role nao pertence ao seu tenant.', 403)
+    const roleData = role as { is_system: boolean; tenant_id: string } | null
+    if (!roleData) return jsonError('Role nao encontrado.', 404)
+    if (roleData.is_system) return jsonError('Nao e possivel editar roles de sistema.', 403)
+    if (roleData.tenant_id !== profileData.tenant_id) return jsonError('Role nao pertence ao seu tenant.', 403)
 
     const body = await request.json()
     const { displayName, description, hierarchyLevel } = body as {
@@ -73,7 +77,7 @@ export async function PUT(
     if (description !== undefined) updates.description = description
     if (hierarchyLevel !== undefined) updates.hierarchy_level = hierarchyLevel
 
-    const { error: updateErr } = await service
+    const { error: updateErr } = await (service as any)
       .from('roles')
       .update(updates)
       .eq('id', id)
@@ -98,19 +102,21 @@ export async function DELETE(
     const { error, profile, service } = await requireOwnerOrAdmin(user.id)
     if (error || !profile) return jsonError(error ?? 'Erro.', 403)
 
+    const profileData = profile as { tenant_id: string }
     const { id } = await params
 
-    const { data: role } = await service
+    const { data: role } = await (service as any)
       .from('roles')
       .select('id, is_system, tenant_id')
       .eq('id', id)
       .single()
 
-    if (!role) return jsonError('Role nao encontrado.', 404)
-    if (role.is_system) return jsonError('Nao e possivel excluir roles de sistema.', 403)
-    if (role.tenant_id !== profile.tenant_id) return jsonError('Role nao pertence ao seu tenant.', 403)
+    const roleData = role as { is_system: boolean; tenant_id: string } | null
+    if (!roleData) return jsonError('Role nao encontrado.', 404)
+    if (roleData.is_system) return jsonError('Nao e possivel excluir roles de sistema.', 403)
+    if (roleData.tenant_id !== profileData.tenant_id) return jsonError('Role nao pertence ao seu tenant.', 403)
 
-    const { data: usersWithRole } = await service
+    const { data: usersWithRole } = await (service as any)
       .from('user_roles')
       .select('id')
       .eq('role_id', id)
@@ -121,12 +127,12 @@ export async function DELETE(
       return jsonError('Nao e possivel excluir. Existem usuarios com este nivel de acesso.', 409)
     }
 
-    await service
+    await (service as any)
       .from('role_permissions')
       .delete()
       .eq('role_id', id)
 
-    const { error: delErr } = await service
+    const { error: delErr } = await (service as any)
       .from('roles')
       .delete()
       .eq('id', id)

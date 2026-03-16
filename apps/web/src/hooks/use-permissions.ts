@@ -56,10 +56,11 @@ export function usePermissions() {
         return
       }
 
-      const { data: userRoles } = await supabase
+      const profileData = profile as { id: string; tenant_id: string }
+      const { data: userRoles } = await (supabase as any)
         .from('user_roles')
         .select('role_id, unit_id, is_active, roles(name)')
-        .eq('user_id', profile.id)
+        .eq('user_id', profileData.id)
         .eq('is_active', true)
 
       const roles: UserRole[] = (userRoles ?? []).map((ur: Record<string, unknown>) => {
@@ -77,7 +78,7 @@ export function usePermissions() {
 
       let permissions: RolePermission[] = []
       if (roleIds.length > 0) {
-        const { data: perms } = await supabase
+        const { data: perms } = await (supabase as any)
           .from('role_permissions')
           .select('module_code, resource, actions, conditions')
           .in('role_id', roleIds)
@@ -90,8 +91,8 @@ export function usePermissions() {
           roles,
           permissions,
           loading: false,
-          profileId: profile.id,
-          tenantId: profile.tenant_id,
+          profileId: profileData.id,
+          tenantId: profileData.tenant_id,
         })
       }
     }

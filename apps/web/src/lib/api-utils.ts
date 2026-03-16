@@ -45,19 +45,20 @@ export async function requireOwnerOrAdmin(userId: string) {
 
   if (!profile) return { error: 'Perfil nao encontrado.', status: 404 as const, profile: null, service }
 
-  const { data: userRoles } = await service
+  const profileData = profile as { id: string; tenant_id: string }
+  const { data: userRoles } = await (service as any)
     .from('user_roles')
     .select('role_id, roles(name)')
-    .eq('user_id', profile.id)
+    .eq('user_id', profileData.id)
     .eq('is_active', true)
 
   const roleNames = (userRoles ?? []).map((ur: Record<string, unknown>) => {
     const roleData = ur.roles as { name: string } | { name: string }[] | null
     return Array.isArray(roleData) ? roleData[0]?.name : roleData?.name
-  })
+  }) as (string | undefined)[]
 
   const isAuthorized = roleNames.some(
-    (name) => name === 'owner' || name === 'admin' || name === 'platform_admin'
+    (name: string | undefined) => name === 'owner' || name === 'admin' || name === 'platform_admin'
   )
 
   if (!isAuthorized) {

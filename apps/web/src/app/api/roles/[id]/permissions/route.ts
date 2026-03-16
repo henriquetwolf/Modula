@@ -44,6 +44,7 @@ export async function PUT(
     const { error, profile, service } = await requireOwnerOrAdmin(user.id)
     if (error || !profile) return jsonError(error ?? 'Erro.', 403)
 
+    const profileData = profile as { tenant_id: string }
     const { id } = await params
 
     const { data: role } = await (service as any)
@@ -55,7 +56,7 @@ export async function PUT(
     const roleData = role as { id: string; is_system: boolean; tenant_id: string } | null
     if (!roleData) return jsonError('Role nao encontrado.', 404)
     if (roleData.is_system) return jsonError('Nao e possivel editar permissoes de roles de sistema.', 403)
-    if (roleData.tenant_id !== profile.tenant_id) return jsonError('Role nao pertence ao seu tenant.', 403)
+    if (roleData.tenant_id !== profileData.tenant_id) return jsonError('Role nao pertence ao seu tenant.', 403)
 
     const body = await request.json()
     const { permissions } = body as { permissions: PermissionInput[] }

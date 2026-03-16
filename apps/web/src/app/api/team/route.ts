@@ -9,7 +9,8 @@ export async function GET() {
     const { error, profile, service } = await requireOwnerOrAdmin(user.id)
     if (error || !profile) return jsonError(error ?? 'Erro.', 403)
 
-    const { data: members, error: qErr } = await service
+    const profileData = profile as { id: string; tenant_id: string }
+    const { data: members, error: qErr } = await (service as any)
       .from('user_profiles')
       .select(`
         id,
@@ -36,7 +37,7 @@ export async function GET() {
           units (name)
         )
       `)
-      .eq('tenant_id', profile.tenant_id)
+      .eq('tenant_id', profileData.tenant_id)
       .order('created_at', { ascending: true })
 
     if (qErr) return jsonError(qErr.message, 500)
@@ -56,25 +57,26 @@ export async function DELETE(request: Request) {
     const { error, profile, service } = await requireOwnerOrAdmin(user.id)
     if (error || !profile) return jsonError(error ?? 'Erro.', 403)
 
+    const profileData = profile as { id: string; tenant_id: string }
     const { searchParams } = new URL(request.url)
     const memberId = searchParams.get('memberId')
     if (!memberId) return jsonError('memberId obrigatorio.', 400)
 
-    if (memberId === profile.id) {
+    if (memberId === profileData.id) {
       return jsonError('Voce nao pode remover a si mesmo.', 400)
     }
 
-    await service
+    await (service as any)
       .from('user_roles')
       .delete()
       .eq('user_id', memberId)
-      .eq('tenant_id', profile.tenant_id)
+      .eq('tenant_id', profileData.tenant_id)
 
-    await service
+    await (service as any)
       .from('unit_memberships')
       .delete()
       .eq('user_id', memberId)
-      .eq('tenant_id', profile.tenant_id)
+      .eq('tenant_id', profileData.tenant_id)
 
     return NextResponse.json({ success: true })
   } catch (err) {
