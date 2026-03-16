@@ -93,11 +93,33 @@ export async function POST(request: Request) {
       )
     }
 
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!serviceRoleKey) {
+      return NextResponse.json(
+        { error: 'Configuração do servidor incompleta. SUPABASE_SERVICE_ROLE_KEY não definida.' },
+        { status: 500 }
+      )
+    }
+
     const serviceClient = createClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      serviceRoleKey,
       { auth: { persistSession: false } }
     )
+
+    const { data: existingProfile } = await serviceClient
+      .from('user_profiles')
+      .select('id, tenant_id')
+      .eq('auth_user_id', user.id)
+      .maybeSingle()
+
+    if (existingProfile) {
+      return NextResponse.json({
+        success: true,
+        tenantId: existingProfile.tenant_id,
+        message: 'Perfil já existe. Redirecionando.',
+      })
+    }
 
     const tenantSlug = slugify(business_name)
     const baseSlug = tenantSlug

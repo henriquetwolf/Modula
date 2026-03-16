@@ -10,12 +10,17 @@ import {
   DollarSign,
   ClipboardCheck,
   Dumbbell,
+  FileText,
+  ShieldCheck,
+  FileHeart,
+  UserCircle,
   Settings,
-  Bell,
   LogOut,
   PanelLeftClose,
   PanelLeft,
   Menu,
+  ScrollText,
+  CreditCard,
 } from 'lucide-react'
 import { getSupabaseBrowser } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -30,6 +35,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { SidebarNav, type SidebarNavSection } from './sidebar-nav'
+import { NotificationDropdown } from '@/components/notifications/notification-dropdown'
 import { getInitials } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
@@ -40,6 +46,8 @@ const NAV_SECTIONS: SidebarNavSection[] = [
       { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
       { label: 'Clientes', href: '/clients', icon: Users },
       { label: 'Agenda', href: '/agenda', icon: Calendar },
+      { label: 'Prontuário', href: '/records', icon: FileHeart },
+      { label: 'Portal do Cliente', href: '/portal', icon: UserCircle },
     ],
   },
   {
@@ -48,24 +56,42 @@ const NAV_SECTIONS: SidebarNavSection[] = [
       { label: 'Financeiro', href: '/financial', icon: DollarSign },
       { label: 'Avaliações', href: '/evaluations', icon: ClipboardCheck },
       { label: 'Treinos', href: '/training', icon: Dumbbell },
+      { label: 'Documentos', href: '/documents', icon: FileText },
+    ],
+  },
+  {
+    title: 'Compliance',
+    items: [
+      { label: 'Consentimentos', href: '/consent', icon: ShieldCheck },
+      { label: 'Auditoria', href: '/audit', icon: ScrollText },
     ],
   },
   {
     title: 'Configurações',
-    items: [{ label: 'Configurações', href: '/configuracoes', icon: Settings }],
+    items: [
+      { label: 'Plano & Módulos', href: '/billing', icon: CreditCard },
+      { label: 'Configurações', href: '/configuracoes', icon: Settings },
+    ],
   },
 ]
 
 const PAGE_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
+  '/portal': 'Portal do Cliente',
   '/clients': 'Clientes',
   '/agenda': 'Agenda',
+  '/records': 'Prontuário',
   '/financial': 'Financeiro',
   '/financial/subscriptions': 'Planos de Clientes',
   '/evaluations': 'Avaliações',
   '/training': 'Treinos',
   '/training/new': 'Novo Treino',
+  '/documents': 'Documentos',
+  '/consent': 'Consentimentos LGPD',
+  '/audit': 'Auditoria',
+  '/billing': 'Plano & Módulos',
   '/configuracoes': 'Configurações',
+  '/notifications': 'Notificações',
 }
 
 function getPageTitle(pathname: string): string {
@@ -222,9 +248,7 @@ export function AppShell({ user, children }: AppShellProps) {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="relative" aria-label="Notificações">
-              <Bell className="h-5 w-5" />
-            </Button>
+            <NotificationDropdown />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

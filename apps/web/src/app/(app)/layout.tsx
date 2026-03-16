@@ -1,6 +1,15 @@
 import { redirect } from 'next/navigation'
+import { createClient } from '@supabase/supabase-js'
 import { getSupabaseServer } from '@/lib/supabase/server'
 import { AppShell } from '@/components/layout/app-shell'
+
+function getServiceClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  )
+}
 
 export default async function AppLayout({
   children,
@@ -14,7 +23,8 @@ export default async function AppLayout({
     redirect('/login')
   }
 
-  const { data: profile } = await supabase
+  const admin = getServiceClient()
+  const { data: profile } = await admin
     .from('user_profiles')
     .select(`
       full_name,

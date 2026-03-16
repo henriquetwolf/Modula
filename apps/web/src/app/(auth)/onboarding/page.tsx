@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Building2, MapPin, CheckCircle2 } from 'lucide-react'
+import { Building2, MapPin, CheckCircle2, LogOut } from 'lucide-react'
 
 const TOTAL_STEPS = 3
 
@@ -102,6 +102,10 @@ export default function OnboardingPage() {
         setError(json.error ?? 'Erro ao concluir cadastro')
         return
       }
+
+      const supabase = getSupabaseBrowser()
+      await supabase.auth.refreshSession()
+
       router.push('/dashboard')
       router.refresh()
     } catch {
@@ -111,12 +115,27 @@ export default function OnboardingPage() {
     }
   }
 
+  async function handleSignOut() {
+    const supabase = getSupabaseBrowser()
+    await supabase.auth.signOut()
+    router.push('/login')
+    router.refresh()
+  }
+
   return (
     <div className="w-full max-w-xl mx-auto space-y-6">
       {/* Progress indicator */}
       <div className="space-y-2">
         <div className="flex justify-between text-sm text-teal-700 font-medium">
           <span>Etapa {step} de {TOTAL_STEPS}</span>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="flex items-center gap-1 text-teal-200 hover:text-white transition-colors"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            Sair
+          </button>
         </div>
         <div className="h-2 bg-teal-100 rounded-full overflow-hidden">
           <div
