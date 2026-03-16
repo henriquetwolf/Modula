@@ -67,7 +67,18 @@ const INTERESTS: Record<string, { value: string; label: string }[]> = {
   ],
 }
 
-const formSchema = z.object({
+type FormData = {
+  course: string
+  institution_name: string
+  institution_type: string
+  course_name: string
+  current_semester: number
+  total_semesters: number
+  shift: string
+  areas_of_interest: string[]
+}
+
+const formSchema: z.ZodType<FormData> = z.object({
   course: z.string().min(1, 'Selecione seu curso'),
   institution_name: z.string().min(2, 'Informe sua instituição'),
   institution_type: z.string().min(1, 'Selecione o tipo'),
@@ -77,8 +88,6 @@ const formSchema = z.object({
   shift: z.string().min(1, 'Selecione o turno'),
   areas_of_interest: z.array(z.string()).default([]),
 })
-
-type FormData = z.infer<typeof formSchema>
 
 export default function StudentOnboardingPage() {
   const router = useRouter()
