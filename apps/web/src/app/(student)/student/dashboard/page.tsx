@@ -61,13 +61,19 @@ export default async function StudentDashboardPage() {
     .eq('auth_user_id', user!.id)
     .single()
 
-  const { data: studentProfile } = await admin
-    .from('student_profiles')
-    .select('*')
-    .eq('user_id', profile!.id)
-    .single() as any
+  let studentProfile: any = null
+  try {
+    const { data } = await admin
+      .from('student_profiles')
+      .select('*')
+      .eq('user_id', profile!.id)
+      .maybeSingle()
+    studentProfile = data
+  } catch {
+    // student_profiles table may not exist yet
+  }
 
-  const sp = studentProfile || { course: 'ef', current_semester: 1, total_semesters: 8, institution_name: '', areas_of_interest: [] }
+  const sp = studentProfile || { course: 'ef', current_semester: 1, total_semesters: 8, institution_name: 'Configurar perfil', areas_of_interest: [] }
   const phase = getAcademicPhase(sp.current_semester, sp.total_semesters)
   const firstName = profile!.full_name.split(' ')[0]
 

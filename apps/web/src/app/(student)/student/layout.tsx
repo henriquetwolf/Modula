@@ -31,17 +31,25 @@ export default async function StudentLayout({
     .single()
 
   if (!profile) {
-    redirect('/onboarding')
+    redirect('/onboarding/student')
   }
 
-  const { data: studentProfile } = await admin
-    .from('student_profiles')
-    .select('course, current_semester')
-    .eq('user_id', profile.id)
-    .single()
+  let studentCourse: string | undefined
+  let studentSemester: number | undefined
 
-  if (!studentProfile) {
-    redirect('/onboarding')
+  try {
+    const { data: studentProfile } = await admin
+      .from('student_profiles')
+      .select('course, current_semester')
+      .eq('user_id', profile.id)
+      .maybeSingle()
+
+    if (studentProfile) {
+      studentCourse = (studentProfile as any).course
+      studentSemester = (studentProfile as any).current_semester
+    }
+  } catch {
+    // student_profiles table may not exist yet (migrations not applied)
   }
 
   return (
@@ -50,8 +58,8 @@ export default async function StudentLayout({
         full_name: profile.full_name,
         email: profile.email,
         avatar_url: profile.avatar_url,
-        course: (studentProfile as any)?.course,
-        current_semester: (studentProfile as any)?.current_semester,
+        course: studentCourse,
+        current_semester: studentSemester,
       }}
     >
       {children}
