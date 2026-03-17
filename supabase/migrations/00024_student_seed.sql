@@ -228,3 +228,83 @@ INSERT INTO public.case_studies (area, specialty, title, description, difficulty
         '{nutricao,clinica,diabetes,avaliacao_nutricional}',
         true
     );
+
+-- ============================================================================
+-- SAMPLE QUESTION BANK (system)
+-- ============================================================================
+
+INSERT INTO public.question_bank (area, discipline, topic, question_text, options, correct_option_index, explanation, difficulty, tags, is_system) VALUES
+    -- Educacao Fisica
+    ('ef', 'Fisiologia do Exercicio', 'Metabolismo Energetico',
+     'Qual sistema energetico e predominante em exercicios de alta intensidade e curta duracao (ate 10 segundos)?',
+     '[{"text": "Sistema oxidativo"}, {"text": "Sistema ATP-CP (fosfageno)"}, {"text": "Glicólise anaerobica"}, {"text": "Beta-oxidacao"}]',
+     1, 'O sistema ATP-CP (fosfageno) fornece energia imediata para esforcos de altissima intensidade com duracao de ate 10 segundos, como sprints curtos e saltos.', 'beginner',
+     '{fisiologia,metabolismo,energia}', true),
+
+    ('ef', 'Fisiologia do Exercicio', 'Adaptacoes ao Treinamento',
+     'Qual o principal mecanismo responsavel pela hipertrofia muscular em resposta ao treinamento resistido?',
+     '[{"text": "Aumento do numero de fibras musculares (hiperplasia)"}, {"text": "Aumento da area de secao transversa das fibras existentes"}, {"text": "Aumento do tecido conjuntivo intramuscular"}, {"text": "Aumento dos estoques de glicogenio"}]',
+     1, 'A hipertrofia muscular ocorre principalmente pelo aumento da area de secao transversa das fibras ja existentes, e nao pela criacao de novas fibras.', 'intermediate',
+     '{fisiologia,hipertrofia,treinamento}', true),
+
+    ('ef', 'Treinamento Esportivo', 'Periodizacao',
+     'Na periodizacao classica de Matveev, qual fase e caracterizada por alto volume e baixa intensidade?',
+     '[{"text": "Periodo competitivo"}, {"text": "Periodo preparatorio geral"}, {"text": "Periodo de transicao"}, {"text": "Periodo preparatorio especifico"}]',
+     1, 'O periodo preparatorio geral e marcado por cargas de alto volume e baixa intensidade, visando construir base aerobica e resistencia geral.', 'intermediate',
+     '{treinamento,periodizacao}', true),
+
+    ('ef', 'Avaliacao Fisica', 'Composicao Corporal',
+     'Qual protocolo de dobras cutaneas utiliza 7 pontos anatomicos para estimar o percentual de gordura?',
+     '[{"text": "Protocolo de Guedes (3 dobras)"}, {"text": "Protocolo de Pollock (7 dobras)"}, {"text": "Protocolo de Durnin-Womersley (4 dobras)"}, {"text": "Protocolo de Faulkner (4 dobras)"}]',
+     1, 'O protocolo de Pollock utiliza 7 dobras cutaneas: peitoral, axilar media, triceps, subescapular, abdominal, supra-iliaca e coxa.', 'beginner',
+     '{avaliacao,composicao_corporal,antropometria}', true),
+
+    -- Fisioterapia
+    ('physio', 'Ortopedia', 'Testes Especiais',
+     'O teste de Lachman avalia a integridade de qual estrutura do joelho?',
+     '[{"text": "Ligamento colateral medial"}, {"text": "Ligamento cruzado anterior"}, {"text": "Menisco medial"}, {"text": "Ligamento cruzado posterior"}]',
+     1, 'O teste de Lachman e o teste mais sensivel para avaliar a integridade do ligamento cruzado anterior (LCA), realizado com o joelho em 20-30 graus de flexao.', 'beginner',
+     '{ortopedia,joelho,testes_especiais}', true),
+
+    ('physio', 'Ortopedia', 'Ombro',
+     'O teste de Neer e utilizado para avaliar qual condicao do ombro?',
+     '[{"text": "Instabilidade glenoumeral"}, {"text": "Impacto subacromial"}, {"text": "Lesao de SLAP"}, {"text": "Capsulite adesiva"}]',
+     1, 'O teste de Neer avalia o impacto subacromial. Realiza-se elevacao passiva do braco em rotacao interna, provocando dor pela compressao do tendao do supraespinhal contra o acromio.', 'intermediate',
+     '{ortopedia,ombro,impacto}', true),
+
+    ('physio', 'Neurologia', 'AVE',
+     'Qual escala padronizada e mais utilizada para avaliar a gravidade do AVE agudo?',
+     '[{"text": "Escala de Rankin modificada"}, {"text": "Escala NIHSS"}, {"text": "Indice de Barthel"}, {"text": "Escala de Ashworth"}]',
+     1, 'A NIHSS (National Institutes of Health Stroke Scale) e a escala padrao para avaliar a gravidade do AVE agudo, com pontuacao de 0 a 42.', 'intermediate',
+     '{neurologia,ave,escalas}', true),
+
+    ('physio', 'Respiratoria', 'Espirometria',
+     'Na espirometria, a relacao VEF1/CVF menor que 70% sugere qual padrao ventilatorio?',
+     '[{"text": "Padrao restritivo"}, {"text": "Padrao obstrutivo"}, {"text": "Padrao misto"}, {"text": "Normal"}]',
+     1, 'A relacao VEF1/CVF (indice de Tiffeneau) menor que 70% indica padrao obstrutivo, caracteristico de doencas como DPOC e asma.', 'intermediate',
+     '{respiratoria,espirometria,dpoc}', true),
+
+    -- Nutricao
+    ('nutrition', 'Nutricao Clinica', 'Diabetes',
+     'Qual a recomendacao de fibras diarias para pacientes com diabetes tipo 2, segundo a SBD?',
+     '[{"text": "Minimo de 14g por dia"}, {"text": "Minimo de 20g por dia"}, {"text": "Minimo de 35g por dia"}, {"text": "Minimo de 50g por dia"}]',
+     1, 'A SBD recomenda pelo menos 20g de fibras por dia para diabeticos. Dietas ricas em fibras soluveis ajudam no controle glicemico.', 'beginner',
+     '{nutricao_clinica,diabetes,fibras}', true),
+
+    ('nutrition', 'Nutricao Esportiva', 'Suplementacao',
+     'Qual suplemento possui a evidencia cientifica mais robusta para aumento de forca e potencia muscular?',
+     '[{"text": "BCAA"}, {"text": "Creatina monoidratada"}, {"text": "Glutamina"}, {"text": "Beta-alanina"}]',
+     1, 'A creatina monoidratada e o suplemento com maior nivel de evidencia para ganhos de forca, potencia e massa muscular, sendo segura e eficaz.', 'beginner',
+     '{nutricao_esportiva,suplementacao,creatina}', true),
+
+    ('nutrition', 'Avaliacao Nutricional', 'Antropometria',
+     'A circunferencia da cintura acima de qual valor indica risco cardiovascular aumentado em homens, segundo a OMS?',
+     '[{"text": "80 cm"}, {"text": "88 cm"}, {"text": "94 cm"}, {"text": "102 cm"}]',
+     2, 'A OMS indica risco cardiovascular aumentado quando a circunferencia da cintura e >= 94 cm em homens (risco elevado >= 102 cm) e >= 80 cm em mulheres.', 'beginner',
+     '{avaliacao_nutricional,antropometria,risco_cardiovascular}', true),
+
+    ('nutrition', 'Nutricao Clinica', 'Doenca Renal',
+     'Na doenca renal cronica estagio 3-4 (sem dialise), qual a faixa recomendada de proteina por kg de peso?',
+     '[{"text": "0,6 a 0,8 g/kg/dia"}, {"text": "1,0 a 1,2 g/kg/dia"}, {"text": "1,4 a 1,6 g/kg/dia"}, {"text": "2,0 g/kg/dia ou mais"}]',
+     0, 'Em DRC pre-dialitica (estagios 3-4), recomenda-se restricao proteica de 0,6 a 0,8 g/kg/dia para retardar a progressao da doenca.', 'advanced',
+     '{nutricao_clinica,doenca_renal,proteina}', true);
