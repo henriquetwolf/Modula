@@ -16,7 +16,8 @@ INSERT INTO public.module_catalog (code, name, description, category, is_core, p
     ('student.research',     'Pesquisa Cientifica',      'Busca federada de artigos, biblioteca, fichamentos',       'student', false, 1900, 14, 85),
     ('student.tutor',        'AI Tutor Academico',       'Chat tutor por area, explicacoes, quiz adaptativo',        'student', false, 2900, 7, 86),
     ('student.organization', 'Organizacao Academica',    'Agenda, tarefas, plano semanal, produtividade',            'student', false, 0, 0, 87),
-    ('student.career',       'Preparacao Profissional',  'Transicao estudante-profissional, checklist, upgrade',     'student', false, 1900, 14, 88);
+    ('student.career',       'Preparacao Profissional',  'Transicao estudante-profissional, checklist, upgrade',     'student', false, 1900, 14, 88)
+ON CONFLICT (code) DO NOTHING;
 
 -- ============================================================================
 -- SAAS PLANS FOR STUDENTS
@@ -63,7 +64,8 @@ INSERT INTO public.saas_plans (name, slug, tier, description, price_monthly_cent
             'student.career'
         ],
         6
-    );
+    )
+ON CONFLICT (slug) DO NOTHING;
 
 -- ============================================================================
 -- STUDENT ROLE PERMISSIONS
@@ -105,7 +107,8 @@ INSERT INTO public.role_permissions (role_id, module_code, resource, actions) VA
     ((SELECT id FROM public.roles WHERE name = 'student'), 'student.organization', 'academic_events', '{create,read,update,delete}'),
     ((SELECT id FROM public.roles WHERE name = 'student'), 'student.organization', 'academic_tasks', '{create,read,update,delete}'),
     ((SELECT id FROM public.roles WHERE name = 'student'), 'student.organization', 'weekly_plans', '{create,read,update,delete}'),
-    ((SELECT id FROM public.roles WHERE name = 'student'), 'student.organization', 'productivity_logs', '{create,read}');
+    ((SELECT id FROM public.roles WHERE name = 'student'), 'student.organization', 'productivity_logs', '{create,read}')
+ON CONFLICT (role_id, module_code, resource) DO NOTHING;
 
 -- Owner role also gets all student permissions (student is owner of own tenant)
 INSERT INTO public.role_permissions (role_id, module_code, resource, actions) VALUES
@@ -147,11 +150,14 @@ INSERT INTO public.role_permissions (role_id, module_code, resource, actions) VA
     ((SELECT id FROM public.roles WHERE name = 'owner'), 'student.career', 'career_checklists', '{create,read,update}'),
     ((SELECT id FROM public.roles WHERE name = 'owner'), 'student.career', 'career_interests', '{create,read,update}'),
     ((SELECT id FROM public.roles WHERE name = 'owner'), 'student.career', 'upgrade_readiness', '{read}'),
-    ((SELECT id FROM public.roles WHERE name = 'owner'), 'student.career', 'career_milestones', '{create,read}');
+    ((SELECT id FROM public.roles WHERE name = 'owner'), 'student.career', 'career_milestones', '{create,read}')
+ON CONFLICT (role_id, module_code, resource) DO NOTHING;
 
 -- ============================================================================
 -- SAMPLE STUDY TRACKS (system)
 -- ============================================================================
+
+DELETE FROM public.study_tracks WHERE is_system = true;
 
 INSERT INTO public.study_tracks (area, title, description, difficulty, estimated_hours, is_system, sort_order) VALUES
     -- Educacao Fisica
@@ -175,6 +181,8 @@ INSERT INTO public.study_tracks (area, title, description, difficulty, estimated
 -- ============================================================================
 -- SAMPLE CASE STUDIES (system)
 -- ============================================================================
+
+DELETE FROM public.case_studies WHERE is_system = true;
 
 INSERT INTO public.case_studies (area, specialty, title, description, difficulty, history, exam_findings, questions, expected_outcomes, tags, is_system) VALUES
     -- Fisioterapia
@@ -232,6 +240,8 @@ INSERT INTO public.case_studies (area, specialty, title, description, difficulty
 -- ============================================================================
 -- SAMPLE QUESTION BANK (system)
 -- ============================================================================
+
+DELETE FROM public.question_bank WHERE is_system = true;
 
 INSERT INTO public.question_bank (area, discipline, topic, question_text, options, correct_option_index, explanation, difficulty, tags, is_system) VALUES
     -- Educacao Fisica

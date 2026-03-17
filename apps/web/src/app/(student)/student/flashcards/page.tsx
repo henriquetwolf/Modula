@@ -15,30 +15,30 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Plus, Layers, Play, RotateCcw, ArrowRight, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Layers, Play, RotateCcw, ArrowRight, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 
 interface Deck {
   id: string
   title: string
   description: string | null
   card_count: number
-  due_count?: number
 }
 
 interface Flashcard {
   id: string
   front: string
   back: string
-  sm2_interval: number
-  sm2_repetitions: number
-  sm2_ease_factor: number
-  sm2_next_review: string
-  review_count: number
+  ease_factor: number
+  interval_days: number
+  repetitions: number
+  next_review_at: string
+  last_reviewed_at: string | null
 }
 
 function sm2(card: Flashcard, quality: number) {
-  let { sm2_ease_factor: ef, sm2_interval: interval, sm2_repetitions: reps } = card
+  let { ease_factor: ef, interval_days: interval, repetitions: reps } = card
 
   if (quality < 3) {
     reps = 0
@@ -60,16 +60,32 @@ function sm2(card: Flashcard, quality: number) {
   nextReview.setDate(nextReview.getDate() + interval)
 
   return {
-    sm2_ease_factor: ef,
-    sm2_interval: interval,
-    sm2_repetitions: reps,
-    sm2_next_review: nextReview.toISOString(),
-    review_count: card.review_count + 1,
+    ease_factor: Number(ef.toFixed(2)),
+    interval_days: interval,
+    repetitions: reps,
+    next_review_at: nextReview.toISOString(),
+    last_reviewed_at: new Date().toISOString(),
+    difficulty: reps === 0 ? 'relearning' : interval <= 1 ? 'learning' : 'review',
   }
+}
+
+async function getUserProfile(supabase: ReturnType<typeof getSupabaseBrowser>) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('id, tenant_id')
+    .eq('auth_user_id', user.id)
+    .single()
+
+  if (!profile) return null
+  return profile as { id: string; tenant_id: string }
 }
 
 export default function FlashcardsPage() {
   const supabase = getSupabaseBrowser()
+  const { toast } = useToast()
   const [decks, setDecks] = useState<Deck[]>([])
   const [selectedDeck, setSelectedDeck] = useState<string | null>(null)
   const [cards, setCards] = useState<Flashcard[]>([])
@@ -79,12 +95,13 @@ export default function FlashcardsPage() {
   const [newDeckOpen, setNewDeckOpen] = useState(false)
   const [newCardOpen, setNewCardOpen] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
 
   const [deckForm, setDeckForm] = useState({ title: '', description: '' })
   const [cardForm, setCardForm] = useState({ front: '', back: '' })
 
   const loadDecks = useCallback(async () => {
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from('flashcard_decks')
       .select('id, title, description, card_count')
       .order('updated_at', { ascending: false })
@@ -97,45 +114,65 @@ export default function FlashcardsPage() {
 
   async function loadCards(deckId: string) {
     setSelectedDeck(deckId)
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from('flashcards')
-      .select('*')
+      .select('id, front, back, ease_factor, interval_days, repetitions, next_review_at, last_reviewed_at')
       .eq('deck_id', deckId)
-      .order('sm2_next_review', { ascending: true })
+      .order('next_review_at', { ascending: true })
 
     if (data) setCards(data as Flashcard[])
   }
 
-  const dueCards = cards.filter(c => new Date(c.sm2_next_review) <= new Date())
+  const dueCards = cards.filter(c => new Date(c.next_review_at) <= new Date())
 
   async function createDeck() {
     if (!deckForm.title) return
+    setSaving(true)
+
+    const profile = await getUserProfile(supabase)
+    if (!profile) {
+      toast({ title: 'Erro', description: 'Não foi possível identificar o usuário. Faça login novamente.', variant: 'destructive' })
+      setSaving(false)
+      return
+    }
+
     const { error } = await (supabase as any).from('flashcard_decks').insert({
+      tenant_id: profile.tenant_id,
+      user_id: profile.id,
       title: deckForm.title,
       description: deckForm.description || null,
       card_count: 0,
     })
-    if (!error) {
+
+    if (error) {
+      toast({ title: 'Erro ao criar deck', description: error.message, variant: 'destructive' })
+    } else {
       setDeckForm({ title: '', description: '' })
       setNewDeckOpen(false)
       loadDecks()
+      toast({ title: 'Deck criado com sucesso!' })
     }
+    setSaving(false)
   }
 
   async function createCard() {
     if (!cardForm.front || !cardForm.back || !selectedDeck) return
-    const nextReview = new Date().toISOString()
+    setSaving(true)
+
     const { error } = await (supabase as any).from('flashcards').insert({
       deck_id: selectedDeck,
       front: cardForm.front,
       back: cardForm.back,
-      sm2_interval: 0,
-      sm2_repetitions: 0,
-      sm2_ease_factor: 2.5,
-      sm2_next_review: nextReview,
-      review_count: 0,
+      ease_factor: 2.50,
+      interval_days: 0,
+      repetitions: 0,
+      next_review_at: new Date().toISOString(),
+      difficulty: 'new',
     })
-    if (!error) {
+
+    if (error) {
+      toast({ title: 'Erro ao criar card', description: error.message, variant: 'destructive' })
+    } else {
       await (supabase as any).from('flashcard_decks')
         .update({ card_count: cards.length + 1 })
         .eq('id', selectedDeck)
@@ -144,6 +181,7 @@ export default function FlashcardsPage() {
       loadCards(selectedDeck)
       loadDecks()
     }
+    setSaving(false)
   }
 
   async function handleReview(quality: number) {
@@ -166,7 +204,11 @@ export default function FlashcardsPage() {
   }
 
   async function deleteDeck(id: string) {
-    await (supabase as any).from('flashcard_decks').delete().eq('id', id)
+    const { error } = await (supabase as any).from('flashcard_decks').delete().eq('id', id)
+    if (error) {
+      toast({ title: 'Erro ao excluir deck', description: error.message, variant: 'destructive' })
+      return
+    }
     if (selectedDeck === id) {
       setSelectedDeck(null)
       setCards([])
@@ -269,7 +311,9 @@ export default function FlashcardsPage() {
                     placeholder="Opcional"
                   />
                 </div>
-                <Button onClick={createDeck} className="w-full bg-teal-600 hover:bg-teal-700">Criar</Button>
+                <Button onClick={createDeck} disabled={saving || !deckForm.title} className="w-full bg-teal-600 hover:bg-teal-700">
+                  {saving ? 'Criando...' : 'Criar'}
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -350,7 +394,9 @@ export default function FlashcardsPage() {
                     placeholder="É um ligamento que conecta o fêmur à tíbia..."
                   />
                 </div>
-                <Button onClick={createCard} className="w-full bg-teal-600 hover:bg-teal-700">Adicionar</Button>
+                <Button onClick={createCard} disabled={saving || !cardForm.front || !cardForm.back} className="w-full bg-teal-600 hover:bg-teal-700">
+                  {saving ? 'Adicionando...' : 'Adicionar'}
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -373,7 +419,7 @@ export default function FlashcardsPage() {
       ) : (
         <div className="space-y-2">
           {cards.map(card => {
-            const isDue = new Date(card.sm2_next_review) <= new Date()
+            const isDue = new Date(card.next_review_at) <= new Date()
             return (
               <Card key={card.id} className={cn('transition-colors', isDue && 'border-amber-200 bg-amber-50/30')}>
                 <CardContent className="flex items-center gap-4 p-4">
@@ -383,7 +429,7 @@ export default function FlashcardsPage() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {isDue && <Badge variant="secondary" className="bg-amber-100 text-amber-700">Para revisar</Badge>}
-                    <span className="text-xs text-muted-foreground">{card.review_count}x revisado</span>
+                    <span className="text-xs text-muted-foreground">{card.repetitions}x revisado</span>
                   </div>
                 </CardContent>
               </Card>
