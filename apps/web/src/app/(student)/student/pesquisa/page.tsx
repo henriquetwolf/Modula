@@ -12,8 +12,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Search, ExternalLink, BookmarkPlus, BookMarked, Loader2, FileText, Calendar, User } from 'lucide-react'
+import { Search, ExternalLink, BookmarkPlus, BookmarkCheck, Loader2, FileText, Calendar, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 
 interface Article {
   id: string
@@ -36,7 +37,9 @@ export default function ResearchPage() {
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
   const [savingId, setSavingId] = useState<string | null>(null)
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const toast = useToast()
 
   async function handleSearch() {
     if (!query.trim()) return
@@ -58,13 +61,23 @@ export default function ResearchPage() {
   }
 
   async function handleSave(article: Article) {
+    if (savedIds.has(article.id)) return
     setSavingId(article.id)
     try {
-      await fetch('/api/research/save', {
+      const res = await fetch('/api/research/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(article),
       })
+      if (res.ok) {
+        setSavedIds(prev => new Set(prev).add(article.id))
+        toast.add({ title: 'Artigo salvo na biblioteca', type: 'success' })
+      } else {
+        const data = await res.json().catch(() => ({}))
+        toast.add({ title: data.error || 'Erro ao salvar artigo', type: 'destructive' })
+      }
+    } catch {
+      toast.add({ title: 'Erro de conexão ao salvar', type: 'destructive' })
     } finally {
       setSavingId(null)
     }
@@ -175,11 +188,14 @@ export default function ResearchPage() {
                       size="icon"
                       className="h-8 w-8"
                       onClick={() => handleSave(article)}
-                      disabled={savingId === article.id}
+                      disabled={savingId === article.id || savedIds.has(article.id)}
+                      title={savedIds.has(article.id) ? 'Salvo na biblioteca' : 'Salvar na biblioteca'}
                     >
                       {savingId === article.id
                         ? <Loader2 className="h-4 w-4 animate-spin" />
-                        : <BookmarkPlus className="h-4 w-4" />
+                        : savedIds.has(article.id)
+                          ? <BookmarkCheck className="h-4 w-4 text-teal-600" />
+                          : <BookmarkPlus className="h-4 w-4" />
                       }
                     </Button>
                     {article.url && (

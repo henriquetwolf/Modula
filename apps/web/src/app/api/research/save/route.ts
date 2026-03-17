@@ -42,12 +42,20 @@ export async function POST(request: Request) {
 
     const article = await request.json()
 
-    const { data: existing } = await serviceClient
-      .from('article_metadata')
-      .select('id')
-      .or(`doi.eq.${article.doi || ''},pmid.eq.${article.pmid || ''}`)
-      .limit(1)
-      .maybeSingle()
+    const filters: string[] = []
+    if (article.doi) filters.push(`doi.eq.${article.doi}`)
+    if (article.pmid) filters.push(`pmid.eq.${article.pmid}`)
+
+    let existing = null
+    if (filters.length > 0) {
+      const { data } = await serviceClient
+        .from('article_metadata')
+        .select('id')
+        .or(filters.join(','))
+        .limit(1)
+        .maybeSingle()
+      existing = data
+    }
 
     let articleId: string
 
@@ -57,23 +65,23 @@ export async function POST(request: Request) {
       const { data: created, error } = await (serviceClient
         .from('article_metadata') as any)
         .insert({
-          source: article.source?.toLowerCase() || 'pubmed',
-          external_id: article.pmid || article.id || '',
           doi: article.doi || null,
           pmid: article.pmid || null,
           title: article.title || '',
           authors: article.authors || [],
-          journal: article.journal || null,
+          journal_name: article.journal || null,
           publication_year: article.year || null,
-          abstract_text: article.abstract || null,
+          abstract: article.abstract || null,
           is_open_access: article.is_open_access || false,
-          full_text_url: article.url || null,
-          metadata: {},
+          oa_url: article.url || null,
+          source_apis: [article.source?.toLowerCase() || 'pubmed'],
+          raw_data: {},
         })
         .select('id')
         .single()
 
       if (error || !created) {
+        console.error('Erro ao inserir article_metadata:', error)
         return NextResponse.json({ error: 'Erro ao salvar artigo' }, { status: 500 })
       }
       articleId = (created as any).id
@@ -89,7 +97,7 @@ export async function POST(request: Request) {
 
     const collectionId = (defaultCollection as any)?.id
 
-    await (serviceClient.from('user_article_saves') as any)
+    const { error: saveError } = await (serviceClient.from('user_article_saves') as any)
       .upsert(
         {
           tenant_id: (profile as any).tenant_id,
@@ -97,8 +105,13 @@ export async function POST(request: Request) {
           article_id: articleId,
           collection_id: collectionId || null,
         },
-        { onConflict: 'user_id,article_id' }
+        { onConflict: 'tenant_id,user_id,article_id' }
       )
+
+    if (saveError) {
+      console.error('Erro ao salvar em user_article_saves:', saveError)
+      return NextResponse.json({ error: 'Erro ao salvar artigo na biblioteca' }, { status: 500 })
+    }
 
     return NextResponse.json({ success: true, articleId })
   } catch (err) {

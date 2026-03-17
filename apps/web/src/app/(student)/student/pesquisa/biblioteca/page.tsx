@@ -15,13 +15,13 @@ interface SavedArticle {
     id: string
     title: string
     authors: string[]
-    journal: string | null
+    journal_name: string | null
     publication_year: number | null
     doi: string | null
     pmid: string | null
     is_open_access: boolean
-    full_text_url: string | null
-    source: string
+    oa_url: string | null
+    source_apis: string[]
   }
 }
 
@@ -36,7 +36,7 @@ export default function BibliotecaPage() {
       .from('user_article_saves')
       .select(`
         id, saved_at,
-        article_metadata (id, title, authors, journal, publication_year, doi, pmid, is_open_access, full_text_url, source)
+        article_metadata (id, title, authors, journal_name, publication_year, doi, pmid, is_open_access, oa_url, source_apis)
       `)
       .order('saved_at', { ascending: false })
     if (data) setArticles(data as unknown as SavedArticle[])
@@ -113,9 +113,9 @@ export default function BibliotecaPage() {
                             {article.authors.slice(0, 3).join(', ')}
                           </span>
                         )}
-                        {article.journal && (
+                        {article.journal_name && (
                           <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <FileText className="h-3 w-3" /> {article.journal}
+                            <FileText className="h-3 w-3" /> {article.journal_name}
                           </span>
                         )}
                         {article.publication_year && (
@@ -126,12 +126,14 @@ export default function BibliotecaPage() {
                         {article.is_open_access && (
                           <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs">OA</Badge>
                         )}
-                        <Badge variant="secondary" className="text-xs">{article.source}</Badge>
+                        {article.source_apis?.[0] && (
+                          <Badge variant="secondary" className="text-xs">{article.source_apis[0]}</Badge>
+                        )}
                       </div>
                     </div>
                     <div className="flex gap-1 shrink-0">
-                      {article.full_text_url && (
-                        <a href={article.full_text_url} target="_blank" rel="noopener noreferrer">
+                      {article.oa_url && (
+                        <a href={article.oa_url} target="_blank" rel="noopener noreferrer">
                           <Button variant="ghost" size="icon" className="h-8 w-8">
                             <ExternalLink className="h-4 w-4" />
                           </Button>
