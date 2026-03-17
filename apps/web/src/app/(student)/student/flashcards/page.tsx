@@ -85,7 +85,7 @@ async function getUserProfile(supabase: ReturnType<typeof getSupabaseBrowser>) {
 
 export default function FlashcardsPage() {
   const supabase = getSupabaseBrowser()
-  const { toast } = useToast()
+  const toast = useToast()
   const [decks, setDecks] = useState<Deck[]>([])
   const [selectedDeck, setSelectedDeck] = useState<string | null>(null)
   const [cards, setCards] = useState<Flashcard[]>([])
@@ -131,7 +131,7 @@ export default function FlashcardsPage() {
 
     const profile = await getUserProfile(supabase)
     if (!profile) {
-      toast({ title: 'Erro', description: 'Não foi possível identificar o usuário. Faça login novamente.', variant: 'destructive' })
+      toast.add({ title: 'Não foi possível identificar o usuário. Faça login novamente.', type: 'destructive' })
       setSaving(false)
       return
     }
@@ -145,12 +145,12 @@ export default function FlashcardsPage() {
     })
 
     if (error) {
-      toast({ title: 'Erro ao criar deck', description: error.message, variant: 'destructive' })
+      toast.add({ title: 'Erro ao criar deck', description: error.message, type: 'destructive' })
     } else {
       setDeckForm({ title: '', description: '' })
       setNewDeckOpen(false)
       loadDecks()
-      toast({ title: 'Deck criado com sucesso!' })
+      toast.add({ title: 'Deck criado com sucesso!', type: 'success' })
     }
     setSaving(false)
   }
@@ -171,7 +171,7 @@ export default function FlashcardsPage() {
     })
 
     if (error) {
-      toast({ title: 'Erro ao criar card', description: error.message, variant: 'destructive' })
+      toast.add({ title: 'Erro ao criar card', description: error.message, type: 'destructive' })
     } else {
       await (supabase as any).from('flashcard_decks')
         .update({ card_count: cards.length + 1 })
@@ -206,7 +206,7 @@ export default function FlashcardsPage() {
   async function deleteDeck(id: string) {
     const { error } = await (supabase as any).from('flashcard_decks').delete().eq('id', id)
     if (error) {
-      toast({ title: 'Erro ao excluir deck', description: error.message, variant: 'destructive' })
+      toast.add({ title: 'Erro ao excluir deck', description: error.message, type: 'destructive' })
       return
     }
     if (selectedDeck === id) {
