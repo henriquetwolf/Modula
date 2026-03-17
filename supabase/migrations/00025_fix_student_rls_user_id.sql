@@ -1,21 +1,41 @@
 -- ============================================================================
--- MODULA HEALTH — Migration 025: Fix RLS user_id mismatch in student tables
+-- MODULA HEALTH — Migration 025: Fix RLS helper functions & student policies
 --
--- Problem: get_current_user_id() returns auth.uid() (auth.users.id)
--- but user_id columns in student tables reference user_profiles.id.
--- These are different UUIDs, so all RLS policies silently fail.
+-- Problems fixed:
+-- 1. get_current_tenant_id() returns NULL if custom access token hook is not
+--    enabled, breaking ALL RLS policies that check tenant_id.
+-- 2. get_current_user_id() returns auth.uid() but user_id columns reference
+--    user_profiles.id (different UUIDs), breaking user-scoped policies.
 --
--- Solution: Create get_current_user_profile_id() that resolves the correct ID,
--- then drop & recreate all affected policies from migration 00023.
+-- Solution: Add SECURITY DEFINER + user_profiles fallback to both functions,
+-- create get_current_user_profile_id(), and recreate affected policies.
 -- ============================================================================
 
+-- Fix get_current_tenant_id: add fallback to user_profiles when JWT has no claim
+CREATE OR REPLACE FUNCTION public.get_current_tenant_id()
+RETURNS uuid
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+AS $$
+  SELECT COALESCE(
+    (auth.jwt()->>'tenant_id')::uuid,
+    (current_setting('app.current_tenant', true))::uuid,
+    (SELECT tenant_id FROM public.user_profiles WHERE auth_user_id = auth.uid() LIMIT 1)
+  );
+$$;
+
+-- New helper: resolves auth.uid() → user_profiles.id (uses JWT claim with fallback)
 CREATE OR REPLACE FUNCTION public.get_current_user_profile_id()
 RETURNS uuid
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
 AS $$
-  SELECT id FROM public.user_profiles WHERE auth_user_id = auth.uid() LIMIT 1;
+  SELECT COALESCE(
+    (auth.jwt()->>'profile_id')::uuid,
+    (SELECT id FROM public.user_profiles WHERE auth_user_id = auth.uid() LIMIT 1)
+  );
 $$;
 
 -- ============================================================================

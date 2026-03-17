@@ -5,12 +5,14 @@ import { getSupabaseBrowser } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { BookMarked, ExternalLink, Trash2, User, FileText, Calendar, Search } from 'lucide-react'
+import { BookMarked, ExternalLink, Trash2, User, FileText, Calendar, Search, Sparkles, Loader2, CheckCircle } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { useToast } from '@/hooks/use-toast'
 
 interface SavedArticle {
   id: string
   saved_at: string
+  has_fichamento?: boolean
   article_metadata: {
     id: string
     title: string
@@ -30,6 +32,8 @@ export default function BibliotecaPage() {
   const [articles, setArticles] = useState<SavedArticle[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [generatingId, setGeneratingId] = useState<string | null>(null)
+  const { toast } = useToast()
 
   const loadArticles = useCallback(async () => {
     const { data } = await supabase
@@ -39,9 +43,64 @@ export default function BibliotecaPage() {
         article_metadata (id, title, authors, journal_name, publication_year, doi, pmid, is_open_access, oa_url, source_apis)
       `)
       .order('saved_at', { ascending: false })
-    if (data) setArticles(data as unknown as SavedArticle[])
+
+    if (data) {
+      const articleIds = (data as unknown as SavedArticle[])
+        .map(a => a.article_metadata?.id)
+        .filter(Boolean)
+
+      let fichamentoSet = new Set<string>()
+      if (articleIds.length > 0) {
+        const { data: fichamentos } = await supabase
+          .from('article_fichamentos')
+          .select('article_id')
+          .in('article_id', articleIds)
+        if (fichamentos) {
+          fichamentoSet = new Set(fichamentos.map((f: any) => f.article_id))
+        }
+      }
+
+      setArticles((data as unknown as SavedArticle[]).map(a => ({
+        ...a,
+        has_fichamento: fichamentoSet.has(a.article_metadata?.id),
+      })))
+    }
     setLoading(false)
   }, [supabase])
+
+  async function generateFichamento(articleId: string) {
+    setGeneratingId(articleId)
+    try {
+      const res = await fetch('/api/research/fichamento', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ article_id: articleId }),
+      })
+      const data = await res.json()
+
+      if (res.status === 409) {
+        toast({ title: 'Fichamento já existe', description: 'Este artigo já possui um fichamento gerado.' })
+        setArticles(prev => prev.map(a =>
+          a.article_metadata?.id === articleId ? { ...a, has_fichamento: true } : a
+        ))
+        return
+      }
+
+      if (!res.ok) {
+        toast({ title: 'Erro', description: data.error || 'Erro ao gerar fichamento', variant: 'destructive' })
+        return
+      }
+
+      toast({ title: 'Fichamento gerado!', description: 'Acesse a aba Fichamentos para visualizar.' })
+      setArticles(prev => prev.map(a =>
+        a.article_metadata?.id === articleId ? { ...a, has_fichamento: true } : a
+      ))
+    } catch {
+      toast({ title: 'Erro', description: 'Erro de conexão ao gerar fichamento', variant: 'destructive' })
+    } finally {
+      setGeneratingId(null)
+    }
+  }
 
   useEffect(() => { loadArticles() }, [loadArticles])
 
@@ -132,6 +191,34 @@ export default function BibliotecaPage() {
                       </div>
                     </div>
                     <div className="flex gap-1 shrink-0">
+                      {saved.has_fichamento ? (
+                        <a href="/student/pesquisa/fichamentos">
+                          <Button variant="ghost" size="sm" className="h-8 gap-1 text-emerald-600">
+                            <CheckCircle className="h-3.5 w-3.5" />
+                            <span className="text-xs">Fichado</span>
+                          </Button>
+                        </a>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 gap-1 text-primary"
+                          disabled={generatingId === article.id}
+                          onClick={() => generateFichamento(article.id)}
+                        >
+                          {generatingId === article.id ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              <span className="text-xs">Gerando...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-3.5 w-3.5" />
+                              <span className="text-xs">Gerar Fichamento</span>
+                            </>
+                          )}
+                        </Button>
+                      )}
                       {article.oa_url && (
                         <a href={article.oa_url} target="_blank" rel="noopener noreferrer">
                           <Button variant="ghost" size="icon" className="h-8 w-8">
