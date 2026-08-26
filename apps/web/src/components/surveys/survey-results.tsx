@@ -15,14 +15,6 @@ import {
 } from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -291,20 +283,28 @@ export function SurveyResults({ survey, responses, token }: SurveyResultsProps) 
         </Card>
       ) : (
         <>
-          {active.length > 0 && (
+          {active.length > 0 &&
+            survey.questions.some(
+              (question) => isChoiceQuestion(question.type) || question.type === 'scale_0_10'
+            ) && (
             <div className="space-y-4">
-              {survey.questions.map((question, index) => (
-                <Card key={question.id}>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">
-                      {index + 1}. {question.label}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <QuestionSummary question={question} responses={active} />
-                  </CardContent>
-                </Card>
-              ))}
+              {survey.questions.map((question, index) => {
+                if (!isChoiceQuestion(question.type) && question.type !== 'scale_0_10') {
+                  return null
+                }
+                return (
+                  <Card key={question.id}>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">
+                        {index + 1}. {question.label}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <QuestionSummary question={question} responses={active} />
+                    </CardContent>
+                  </Card>
+                )
+              })}
             </div>
           )}
 
@@ -351,69 +351,69 @@ export function SurveyResults({ survey, responses, token }: SurveyResultsProps) 
               </Tabs>
             </CardHeader>
 
-            <CardContent className="px-0">
+            <CardContent>
               {visible.length === 0 ? (
-                <p className="px-6 py-10 text-center text-sm text-muted-foreground">
+                <p className="py-10 text-center text-sm text-muted-foreground">
                   {viewingActive
                     ? 'Todas as respostas estão arquivadas.'
                     : 'Nenhuma resposta arquivada.'}
                 </p>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="whitespace-nowrap">Data/hora</TableHead>
-                      {survey.questions.map((question) => (
-                        <TableHead key={question.id} className="min-w-[160px]">
-                          {question.label}
-                        </TableHead>
-                      ))}
-                      {!viewingActive && (
-                        <TableHead className="whitespace-nowrap">Arquivada em</TableHead>
-                      )}
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {visible.map((response) => (
-                      <TableRow key={response.id}>
-                        <TableCell className="whitespace-nowrap text-muted-foreground">
-                          {formatDateTime(response.submitted_at)}
-                        </TableCell>
-                        {survey.questions.map((question) => (
-                          <TableCell key={question.id} className="align-top">
-                            {formatAnswer(response.answers[question.id]) || (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </TableCell>
-                        ))}
-                        {!viewingActive && (
-                          <TableCell className="whitespace-nowrap text-muted-foreground">
-                            {response.archived_at ? formatDateTime(response.archived_at) : '—'}
-                          </TableCell>
-                        )}
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleToggleOne(response)}
-                            disabled={pendingId === response.id}
-                            title={viewingActive ? 'Arquivar resposta' : 'Restaurar resposta'}
-                            className="text-muted-foreground hover:text-foreground"
-                          >
-                            {pendingId === response.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : viewingActive ? (
-                              <Archive className="h-4 w-4" />
-                            ) : (
-                              <RotateCcw className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="space-y-4">
+                  {visible.map((response) => (
+                    <div
+                      key={response.id}
+                      className="rounded-lg border bg-muted/30 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium">
+                            {formatDateTime(response.submitted_at)}
+                          </p>
+                          {!viewingActive && response.archived_at && (
+                            <p className="mt-0.5 text-xs text-muted-foreground">
+                              Arquivada em {formatDateTime(response.archived_at)}
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleToggleOne(response)}
+                          disabled={pendingId === response.id}
+                          title={viewingActive ? 'Arquivar resposta' : 'Restaurar resposta'}
+                          className="shrink-0 text-muted-foreground hover:text-foreground"
+                        >
+                          {pendingId === response.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : viewingActive ? (
+                            <Archive className="h-4 w-4" />
+                          ) : (
+                            <RotateCcw className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+
+                      <dl className="mt-4 divide-y">
+                        {survey.questions.map((question, index) => {
+                          const answer = formatAnswer(response.answers[question.id])
+                          return (
+                            <div key={question.id} className="py-3 first:pt-0 last:pb-0">
+                              <dt className="text-xs font-medium text-muted-foreground">
+                                {index + 1}. {question.label}
+                              </dt>
+                              <dd className="mt-1 whitespace-pre-line text-sm">
+                                {answer || (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </dd>
+                            </div>
+                          )
+                        })}
+                      </dl>
+                    </div>
+                  ))}
+                </div>
               )}
             </CardContent>
           </Card>
