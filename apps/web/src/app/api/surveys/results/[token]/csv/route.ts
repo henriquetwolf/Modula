@@ -1,5 +1,5 @@
 import { jsonError } from '@/lib/api-utils'
-import { getSurveyByResultsToken, listSurveyResponses } from '@/lib/surveys/server'
+import { getSurveyByResultsToken, listActiveSurveyResponses } from '@/lib/surveys/server'
 import { formatAnswer } from '@/lib/surveys/schema'
 
 function escapeCsvField(value: string): string {
@@ -20,7 +20,7 @@ function slugifyFilename(title: string): string {
 
 /**
  * Rota publica protegida apenas pelo token de resultados.
- * Exporta as respostas em CSV.
+ * Exporta em CSV somente as respostas ativas (arquivadas ficam de fora).
  */
 export async function GET(
   _request: Request,
@@ -31,7 +31,7 @@ export async function GET(
     const survey = await getSurveyByResultsToken(token)
     if (!survey) return jsonError('Link de resultados inválido.', 404)
 
-    const responses = await listSurveyResponses(survey.id)
+    const responses = await listActiveSurveyResponses(survey.id)
 
     const header = ['Data/hora', ...survey.questions.map((q) => q.label)]
     const rows = responses.map((response) => [

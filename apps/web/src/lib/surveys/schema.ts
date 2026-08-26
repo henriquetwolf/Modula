@@ -87,6 +87,8 @@ export interface SurveyResponse {
   id: string
   answers: Record<string, AnswerValue>
   submitted_at: string
+  /** Preenchido quando a resposta foi arquivada; null quando ativa. */
+  archived_at: string | null
 }
 
 export type AnswerValue = string | string[]

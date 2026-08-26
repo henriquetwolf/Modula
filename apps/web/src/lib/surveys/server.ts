@@ -56,6 +56,7 @@ export async function listSurveysWithCounts(
   const { data: responseRows } = await (service as any)
     .from('survey_responses')
     .select('survey_id')
+    .is('archived_at', null)
     .in(
       'survey_id',
       surveys.map((s) => s.id)
@@ -112,12 +113,15 @@ export async function getSurveyByResultsToken(token: string): Promise<Survey | n
   return data ? normalizeSurvey(data as Record<string, unknown>) : null
 }
 
-/** Respostas de uma pesquisa, da mais recente para a mais antiga. */
+/**
+ * Respostas de uma pesquisa, da mais recente para a mais antiga.
+ * Inclui as arquivadas: quem consome separa pelo campo archived_at.
+ */
 export async function listSurveyResponses(surveyId: string): Promise<SurveyResponse[]> {
   const service = getServiceClient()
   const { data } = await (service as any)
     .from('survey_responses')
-    .select('id, answers, submitted_at')
+    .select('id, answers, submitted_at, archived_at')
     .eq('survey_id', surveyId)
     .order('submitted_at', { ascending: false })
 
@@ -125,5 +129,12 @@ export async function listSurveyResponses(surveyId: string): Promise<SurveyRespo
     id: row.id as string,
     answers: (row.answers as SurveyResponse['answers']) ?? {},
     submitted_at: row.submitted_at as string,
+    archived_at: (row.archived_at as string | null) ?? null,
   }))
+}
+
+/** Somente as respostas ativas (nao arquivadas), da mais recente para a mais antiga. */
+export async function listActiveSurveyResponses(surveyId: string): Promise<SurveyResponse[]> {
+  const responses = await listSurveyResponses(surveyId)
+  return responses.filter((response) => response.archived_at === null)
 }
