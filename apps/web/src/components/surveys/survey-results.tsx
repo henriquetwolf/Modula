@@ -178,20 +178,57 @@ export function SurveyResults({ survey, responses: initialResponses, token }: Su
   // Atualizacao ao vivo (polling) ligada por padrao
   const [live, setLive] = useState(true)
   const [lastSync, setLastSync] = useState<Date | null>(null)
-  // Ids destacados manualmente (piscam em amarelo) — estado apenas visual
-  const [highlighted, setHighlighted] = useState<Set<string>>(new Set())
+  // Resposta com destaque sendo salvo no servidor
+  const [highlightPendingId, setHighlightPendingId] = useState<string | null>(null)
   // Ids que acabaram de chegar (realce breve de "nova resposta")
   const [recentIds, setRecentIds] = useState<Set<string>>(new Set())
   const knownIds = useRef<Set<string>>(new Set(initialResponses.map((r) => r.id)))
+  // Destaques ainda nao confirmados pelo servidor: o polling nao deve sobrescreve-los
+  const inFlightHighlights = useRef<Map<string, string | null>>(new Map())
 
-  const toggleHighlight = useCallback((id: string) => {
-    setHighlighted((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }, [])
+  /**
+   * O destaque fica no banco, entao marcar aqui (ex.: pelo celular) reflete para
+   * todos que estao no mesmo link de resultados no proximo ciclo de atualizacao.
+   */
+  const toggleHighlight = useCallback(
+    async (response: SurveyResponse) => {
+      const willHighlight = response.highlighted_at === null
+      const stamp = willHighlight ? new Date().toISOString() : null
+
+      setHighlightPendingId(response.id)
+      inFlightHighlights.current.set(response.id, stamp)
+      // Atualizacao otimista: a estrela e o piscar respondem na hora
+      setResponses((prev) =>
+        prev.map((r) => (r.id === response.id ? { ...r, highlighted_at: stamp } : r))
+      )
+
+      try {
+        const res = await fetch(`/api/surveys/results/${token}/highlight`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ highlighted: willHighlight, ids: [response.id] }),
+        })
+        const json = await res.json()
+        if (!res.ok) throw new Error(json.error ?? 'Não foi possível salvar o destaque.')
+      } catch (err) {
+        // Reverte a atualizacao otimista
+        setResponses((prev) =>
+          prev.map((r) =>
+            r.id === response.id ? { ...r, highlighted_at: response.highlighted_at } : r
+          )
+        )
+        toast({
+          title: 'Não foi possível salvar o destaque',
+          description: err instanceof Error ? err.message : 'Erro inesperado.',
+          type: 'destructive',
+        })
+      } finally {
+        inFlightHighlights.current.delete(response.id)
+        setHighlightPendingId(null)
+      }
+    },
+    [token, toast]
+  )
 
   // Polling: busca respostas periodicamente e mescla novidades
   useEffect(() => {
@@ -208,9 +245,16 @@ export function SurveyResults({ survey, responses: initialResponses, token }: Su
         const json = (await res.json()) as { responses: SurveyResponse[] }
         if (cancelled) return
 
-        const next = json.responses ?? []
-        const newIds = next.filter((r) => !knownIds.current.has(r.id)).map((r) => r.id)
-        for (const r of next) knownIds.current.add(r.id)
+        const server = json.responses ?? []
+        const newIds = server.filter((r) => !knownIds.current.has(r.id)).map((r) => r.id)
+        for (const r of server) knownIds.current.add(r.id)
+
+        // Preserva destaques cuja gravacao ainda esta em andamento
+        const next = server.map((r) =>
+          inFlightHighlights.current.has(r.id)
+            ? { ...r, highlighted_at: inFlightHighlights.current.get(r.id) ?? null }
+            : r
+        )
 
         setResponses(next)
         setLastSync(new Date())
@@ -269,11 +313,11 @@ export function SurveyResults({ survey, responses: initialResponses, token }: Su
   // Respostas destacadas ficam sempre no topo, preservando a ordem entre si
   const visible = useMemo(() => {
     const base = view === 'active' ? active : archived
-    if (highlighted.size === 0) return base
-    const pinned = base.filter((r) => highlighted.has(r.id))
-    const rest = base.filter((r) => !highlighted.has(r.id))
+    const pinned = base.filter((r) => r.highlighted_at !== null)
+    if (pinned.length === 0) return base
+    const rest = base.filter((r) => r.highlighted_at === null)
     return [...pinned, ...rest]
-  }, [view, active, archived, highlighted])
+  }, [view, active, archived])
   // Na aba ativa a acao arquiva; na aba arquivada a acao restaura
   const viewingActive = view === 'active'
 
@@ -536,8 +580,8 @@ export function SurveyResults({ survey, responses: initialResponses, token }: Su
                         <TableRow
                           key={response.id}
                           className={cn(
-                            highlighted.has(response.id) && 'response-highlight',
-                            !highlighted.has(response.id) &&
+                            response.highlighted_at !== null && 'response-highlight',
+                            response.highlighted_at === null &&
                               recentIds.has(response.id) &&
                               'response-new'
                           )}
@@ -564,15 +608,16 @@ export function SurveyResults({ survey, responses: initialResponses, token }: Su
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => toggleHighlight(response.id)}
+                                onClick={() => toggleHighlight(response)}
+                                disabled={highlightPendingId === response.id}
                                 title={
-                                  highlighted.has(response.id)
+                                  response.highlighted_at !== null
                                     ? 'Remover destaque'
                                     : 'Destacar resposta'
                                 }
-                                aria-pressed={highlighted.has(response.id)}
+                                aria-pressed={response.highlighted_at !== null}
                                 className={cn(
-                                  highlighted.has(response.id)
+                                  response.highlighted_at !== null
                                     ? 'text-amber-500 hover:text-amber-600'
                                     : 'text-muted-foreground hover:text-foreground'
                                 )}
@@ -580,7 +625,7 @@ export function SurveyResults({ survey, responses: initialResponses, token }: Su
                                 <Star
                                   className={cn(
                                     'h-4 w-4',
-                                    highlighted.has(response.id) && 'fill-current'
+                                    response.highlighted_at !== null && 'fill-current'
                                   )}
                                 />
                               </Button>
@@ -614,8 +659,8 @@ export function SurveyResults({ survey, responses: initialResponses, token }: Su
                       key={response.id}
                       className={cn(
                         'rounded-lg border bg-muted/30 p-4',
-                        highlighted.has(response.id) && 'response-highlight',
-                        !highlighted.has(response.id) &&
+                        response.highlighted_at !== null && 'response-highlight',
+                        response.highlighted_at === null &&
                           recentIds.has(response.id) &&
                           'response-new'
                       )}
@@ -635,15 +680,16 @@ export function SurveyResults({ survey, responses: initialResponses, token }: Su
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => toggleHighlight(response.id)}
+                            onClick={() => toggleHighlight(response)}
+                            disabled={highlightPendingId === response.id}
                             title={
-                              highlighted.has(response.id)
+                              response.highlighted_at !== null
                                 ? 'Remover destaque'
                                 : 'Destacar resposta'
                             }
-                            aria-pressed={highlighted.has(response.id)}
+                            aria-pressed={response.highlighted_at !== null}
                             className={cn(
-                              highlighted.has(response.id)
+                              response.highlighted_at !== null
                                 ? 'text-amber-500 hover:text-amber-600'
                                 : 'text-muted-foreground hover:text-foreground'
                             )}
@@ -651,7 +697,7 @@ export function SurveyResults({ survey, responses: initialResponses, token }: Su
                             <Star
                               className={cn(
                                 'h-4 w-4',
-                                highlighted.has(response.id) && 'fill-current'
+                                response.highlighted_at !== null && 'fill-current'
                               )}
                             />
                           </Button>

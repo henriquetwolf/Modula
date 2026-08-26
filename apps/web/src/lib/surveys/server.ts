@@ -124,7 +124,7 @@ export async function listSurveyResponses(surveyId: string): Promise<SurveyRespo
   const service = getServiceClient()
   const { data } = await (service as any)
     .from('survey_responses')
-    .select('id, answers, submitted_at, archived_at')
+    .select('id, answers, submitted_at, archived_at, highlighted_at')
     .eq('survey_id', surveyId)
     .order('submitted_at', { ascending: false })
 
@@ -133,6 +133,7 @@ export async function listSurveyResponses(surveyId: string): Promise<SurveyRespo
     answers: (row.answers as SurveyResponse['answers']) ?? {},
     submitted_at: row.submitted_at as string,
     archived_at: (row.archived_at as string | null) ?? null,
+    highlighted_at: (row.highlighted_at as string | null) ?? null,
   }))
 }
 

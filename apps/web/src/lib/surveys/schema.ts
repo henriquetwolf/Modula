@@ -117,6 +117,11 @@ export interface SurveyResponse {
   submitted_at: string
   /** Preenchido quando a resposta foi arquivada; null quando ativa. */
   archived_at: string | null
+  /**
+   * Preenchido quando a resposta foi marcada como destaque; null caso contrario.
+   * O destaque e compartilhado entre todos que acessam o link de resultados.
+   */
+  highlighted_at: string | null
 }
 
 export type AnswerValue = string | string[]
