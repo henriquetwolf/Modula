@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Lock } from 'lucide-react'
 import { getSurveyByPublicSlug } from '@/lib/surveys/server'
+import { SURVEY_BRANDING_TEXT } from '@/lib/surveys/schema'
 import { PublicSurveyForm } from '@/components/surveys/public-survey-form'
 
 export const dynamic = 'force-dynamic'
@@ -36,6 +37,16 @@ export default async function PublicSurveyPage({
   return (
     <main className="flex min-h-screen justify-center bg-muted/40 px-4 py-8 sm:py-12">
       <div className="w-full max-w-2xl">
+        {survey.logo_url && (
+          <div className="mb-6 flex justify-center">
+            <img
+              src={survey.logo_url}
+              alt={survey.title}
+              className="h-auto w-full max-w-md object-contain"
+            />
+          </div>
+        )}
+
         {isOpen ? (
           <PublicSurveyForm
             slug={survey.public_slug}
@@ -58,9 +69,9 @@ export default async function PublicSurveyPage({
           </div>
         )}
 
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          Formulário criado com Modula Health
-        </p>
+        {survey.show_branding && (
+          <p className="mt-6 text-center text-xs text-muted-foreground">{SURVEY_BRANDING_TEXT}</p>
+        )}
       </div>
     </main>
   )

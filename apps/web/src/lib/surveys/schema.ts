@@ -66,6 +66,10 @@ export const SURVEY_STATUS_LABELS: Record<SurveyStatus, string> = {
 export const DEFAULT_SUBMIT_LABEL = 'Enviar resposta'
 export const SUBMIT_LABEL_MAX_LENGTH = 60
 
+export const SURVEY_BRANDING_TEXT = 'Formulário criado com Modula Health'
+
+export const LOGO_URL_MAX_LENGTH = 2000
+
 export const surveyUpdateSchema = z.object({
   title: z.string().trim().min(1, 'O título é obrigatório').max(200),
   description: z.string().trim().max(2000).default(''),
@@ -74,6 +78,15 @@ export const surveyUpdateSchema = z.object({
     .trim()
     .max(SUBMIT_LABEL_MAX_LENGTH, `O texto do botão deve ter no máximo ${SUBMIT_LABEL_MAX_LENGTH} caracteres`)
     .default(''),
+  logo_url: z
+    .string()
+    .trim()
+    .max(LOGO_URL_MAX_LENGTH)
+    .refine((value) => value === '' || z.url().safeParse(value).success, {
+      message: 'Informe uma URL válida para a logo',
+    })
+    .default(''),
+  show_branding: z.boolean().default(false),
   questions: questionsSchema,
   status: z.enum(SURVEY_STATUSES).optional(),
 })
@@ -86,6 +99,10 @@ export interface Survey {
   description: string | null
   /** Texto do botao de envio; null usa DEFAULT_SUBMIT_LABEL. */
   submit_label: string | null
+  /** URL da imagem exibida acima do formulario publico. */
+  logo_url: string | null
+  /** Exibe o rodape "Formulario criado com Modula Health". */
+  show_branding: boolean
   public_slug: string
   results_token: string
   questions: Question[]

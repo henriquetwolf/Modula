@@ -2,7 +2,7 @@ import { getAuthenticatedUser, getServiceClient } from '@/lib/api-utils'
 import type { Question, Survey, SurveyResponse, SurveyStatus } from './schema'
 
 const SURVEY_COLUMNS =
-  'id, title, description, submit_label, public_slug, results_token, questions, status, created_at, updated_at'
+  'id, title, description, submit_label, logo_url, show_branding, public_slug, results_token, questions, status, created_at, updated_at'
 
 export interface SurveyProfile {
   id: string
@@ -30,6 +30,8 @@ function normalizeSurvey(row: Record<string, unknown>): Survey {
     title: row.title as string,
     description: (row.description as string | null) ?? null,
     submit_label: (row.submit_label as string | null) ?? null,
+    logo_url: (row.logo_url as string | null) ?? null,
+    show_branding: Boolean(row.show_branding),
     public_slug: row.public_slug as string,
     results_token: row.results_token as string,
     questions: Array.isArray(row.questions) ? (row.questions as Question[]) : [],

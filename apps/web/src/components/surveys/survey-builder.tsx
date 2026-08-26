@@ -1,6 +1,7 @@
 'use client'
 
-import { ArrowDown, ArrowUp, GripVertical, Plus, Trash2, X } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { ArrowDown, ArrowUp, GripVertical, ImageIcon, Loader2, Plus, Trash2, Upload, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -15,36 +16,103 @@ import {
 } from '@/components/ui/select'
 import {
   DEFAULT_SUBMIT_LABEL,
+  LOGO_URL_MAX_LENGTH,
   QUESTION_TYPES,
   QUESTION_TYPE_LABELS,
   SUBMIT_LABEL_MAX_LENGTH,
+  SURVEY_BRANDING_TEXT,
   createEmptyQuestion,
   isChoiceQuestion,
   type Question,
   type QuestionType,
 } from '@/lib/surveys/schema'
+import { useToast } from '@/hooks/use-toast'
+import { cn } from '@/lib/utils'
 
 interface SurveyBuilderProps {
+  surveyId: string
   title: string
   description: string
   submitLabel: string
+  logoUrl: string
+  showBranding: boolean
   questions: Question[]
   onTitleChange: (value: string) => void
   onDescriptionChange: (value: string) => void
   onSubmitLabelChange: (value: string) => void
+  onLogoUrlChange: (value: string) => void
+  onShowBrandingChange: (value: boolean) => void
   onQuestionsChange: (questions: Question[]) => void
 }
 
 export function SurveyBuilder({
+  surveyId,
   title,
   description,
   submitLabel,
+  logoUrl,
+  showBranding,
   questions,
   onTitleChange,
   onDescriptionChange,
   onSubmitLabelChange,
+  onLogoUrlChange,
+  onShowBrandingChange,
   onQuestionsChange,
 }: SurveyBuilderProps) {
+  const { add: toast } = useToast()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+
+  async function handleLogoUpload(file: File) {
+    setUploadingLogo(true)
+    try {
+      const formData = new FormData()
+      formData.append('logo', file)
+
+      const res = await fetch(`/api/surveys/${surveyId}/logo`, {
+        method: 'POST',
+        body: formData,
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Não foi possível enviar a logo.')
+
+      onLogoUrlChange(json.logo_url as string)
+      toast({ title: 'Logo enviada', type: 'success' })
+    } catch (err) {
+      toast({
+        title: 'Falha ao enviar logo',
+        description: err instanceof Error ? err.message : 'Erro inesperado.',
+        type: 'destructive',
+      })
+    } finally {
+      setUploadingLogo(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  async function handleRemoveLogo() {
+    if (!logoUrl) return
+
+    setUploadingLogo(true)
+    try {
+      const res = await fetch(`/api/surveys/${surveyId}/logo`, { method: 'DELETE' })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Não foi possível remover a logo.')
+
+      onLogoUrlChange('')
+      toast({ title: 'Logo removida', type: 'success' })
+    } catch (err) {
+      toast({
+        title: 'Falha ao remover logo',
+        description: err instanceof Error ? err.message : 'Erro inesperado.',
+        type: 'destructive',
+      })
+    } finally {
+      setUploadingLogo(false)
+    }
+  }
+
   function updateQuestion(index: number, patch: Partial<Question>) {
     onQuestionsChange(questions.map((q, i) => (i === index ? { ...q, ...patch } : q)))
   }
@@ -112,6 +180,108 @@ export function SurveyBuilder({
               Deixe em branco para usar &ldquo;{DEFAULT_SUBMIT_LABEL}&rdquo;.
             </p>
           </div>
+
+          <div className="space-y-3 border-t pt-4">
+            <Label>Logo no topo (opcional)</Label>
+            {logoUrl ? (
+              <div className="space-y-3">
+                <div className="flex justify-center rounded-lg border bg-muted/30 p-4">
+                  <img
+                    src={logoUrl}
+                    alt="Pré-visualização da logo"
+                    className="h-auto max-h-32 w-full max-w-sm object-contain"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={uploadingLogo}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="gap-2"
+                  >
+                    {uploadingLogo ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    Trocar imagem
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={uploadingLogo}
+                    onClick={handleRemoveLogo}
+                    className="gap-2 text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Remover logo
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                disabled={uploadingLogo}
+                onClick={() => fileInputRef.current?.click()}
+                className={cn(
+                  'flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 text-sm transition-colors',
+                  uploadingLogo
+                    ? 'cursor-wait border-muted-foreground/25 bg-muted/20'
+                    : 'border-muted-foreground/25 bg-muted/30 hover:border-primary/50 hover:bg-primary/5'
+                )}
+              >
+                {uploadingLogo ? (
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                ) : (
+                  <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                )}
+                <span className="font-medium">
+                  {uploadingLogo ? 'Enviando logo...' : 'Clique para enviar uma imagem'}
+                </span>
+                <span className="text-xs text-muted-foreground">JPEG, PNG, WebP ou GIF · até 2 MB</span>
+              </button>
+            )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) void handleLogoUpload(file)
+              }}
+            />
+
+            <div className="space-y-2">
+              <Label htmlFor="survey-logo-url">Ou informe a URL da imagem</Label>
+              <Input
+                id="survey-logo-url"
+                value={logoUrl}
+                onChange={(e) => onLogoUrlChange(e.target.value)}
+                placeholder="https://exemplo.com/logo.png"
+                maxLength={LOGO_URL_MAX_LENGTH}
+              />
+              <p className="text-xs text-muted-foreground">
+                Use o upload acima ou cole o link de uma imagem hospedada externamente.
+              </p>
+            </div>
+          </div>
+
+          <label className="flex w-fit items-start gap-2 border-t pt-4 text-sm">
+            <input
+              type="checkbox"
+              checked={showBranding}
+              onChange={(e) => onShowBrandingChange(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-input accent-primary"
+            />
+            <span>
+              Exibir rodapé &ldquo;{SURVEY_BRANDING_TEXT}&rdquo;
+            </span>
+          </label>
         </CardContent>
       </Card>
 

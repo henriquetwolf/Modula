@@ -35,6 +35,8 @@ export function SurveyEditor({ survey }: SurveyEditorProps) {
   const [title, setTitle] = useState(survey.title)
   const [description, setDescription] = useState(survey.description ?? '')
   const [submitLabel, setSubmitLabel] = useState(survey.submit_label ?? '')
+  const [logoUrl, setLogoUrl] = useState(survey.logo_url ?? '')
+  const [showBranding, setShowBranding] = useState(survey.show_branding)
   const [questions, setQuestions] = useState<Question[]>(survey.questions)
   const [status, setStatus] = useState<SurveyStatus>(survey.status)
   const [saving, setSaving] = useState(false)
@@ -74,6 +76,8 @@ export function SurveyEditor({ survey }: SurveyEditorProps) {
             title,
             description,
             submit_label: submitLabel,
+            logo_url: logoUrl,
+            show_branding: showBranding,
             questions: parsedQuestions.data,
             ...(nextStatus ? { status: nextStatus } : {}),
           }),
@@ -104,7 +108,7 @@ export function SurveyEditor({ survey }: SurveyEditorProps) {
         setSaving(false)
       }
     },
-    [description, questions, router, submitLabel, survey.id, title, toast]
+    [description, logoUrl, questions, router, showBranding, submitLabel, survey.id, title, toast]
   )
 
   return (
@@ -159,13 +163,18 @@ export function SurveyEditor({ survey }: SurveyEditorProps) {
 
         <TabsContent value="perguntas">
           <SurveyBuilder
+            surveyId={survey.id}
             title={title}
             description={description}
             submitLabel={submitLabel}
+            logoUrl={logoUrl}
+            showBranding={showBranding}
             questions={questions}
             onTitleChange={setTitle}
             onDescriptionChange={setDescription}
             onSubmitLabelChange={setSubmitLabel}
+            onLogoUrlChange={setLogoUrl}
+            onShowBrandingChange={setShowBranding}
             onQuestionsChange={setQuestions}
           />
         </TabsContent>
