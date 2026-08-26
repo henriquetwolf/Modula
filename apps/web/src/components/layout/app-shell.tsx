@@ -76,6 +76,7 @@ const NAV_SECTIONS: SidebarNavSection[] = [
     title: 'Principal',
     items: [
       { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+      { label: 'Pesquisas', href: '/pesquisas', icon: ClipboardList },
       { label: 'Clientes', href: '/clients', icon: Users },
       { label: 'Agenda', href: '/agenda', icon: Calendar },
       { label: 'Prontuário', href: '/records', icon: FileHeart },
@@ -137,7 +138,6 @@ const NAV_SECTIONS: SidebarNavSection[] = [
     items: [
       { label: 'CRM', href: '/crm', icon: Target },
       { label: 'Comunicação', href: '/communication', icon: MessageSquare },
-      { label: 'Pesquisas', href: '/pesquisas', icon: ClipboardList },
     ],
   },
   {
