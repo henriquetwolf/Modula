@@ -1,8 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Archive, Download, Inbox, LayoutGrid, List, Loader2, RotateCcw } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Archive, Download, Inbox, LayoutGrid, List, Loader2, RotateCcw, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -31,7 +30,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
-import { formatDateTime } from '@/lib/utils'
+import { cn, formatDateTime } from '@/lib/utils'
 import {
   SURVEY_STATUS_LABELS,
   formatAnswer,
@@ -51,6 +50,11 @@ interface SurveyResultsProps {
 type View = 'active' | 'archived'
 type SortOrder = 'newest' | 'oldest'
 type DisplayMode = 'cards' | 'list'
+
+/** Intervalo de atualizacao ao vivo das respostas (ms). */
+const POLL_INTERVAL_MS = 4000
+/** Duracao do realce de "nova resposta" (deve casar com a animacao CSS). */
+const NEW_RESPONSE_HIGHLIGHT_MS = 3500
 
 const SORT_LABELS: Record<SortOrder, string> = {
   newest: 'Da mais recente para a mais antiga',
@@ -160,8 +164,7 @@ function QuestionSummary({
   )
 }
 
-export function SurveyResults({ survey, responses, token }: SurveyResultsProps) {
-  const router = useRouter()
+export function SurveyResults({ survey, responses: initialResponses, token }: SurveyResultsProps) {
   const { add: toast } = useToast()
   const [view, setView] = useState<View>('active')
   const [order, setOrder] = useState<SortOrder>('newest')
@@ -169,6 +172,84 @@ export function SurveyResults({ survey, responses, token }: SurveyResultsProps) 
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [bulkPending, setBulkPending] = useState(false)
   const [confirmBulk, setConfirmBulk] = useState(false)
+
+  // Respostas gerenciadas localmente para permitir atualizacao ao vivo
+  const [responses, setResponses] = useState<SurveyResponse[]>(initialResponses)
+  // Atualizacao ao vivo (polling) ligada por padrao
+  const [live, setLive] = useState(true)
+  const [lastSync, setLastSync] = useState<Date | null>(null)
+  // Ids destacados manualmente (piscam em amarelo) — estado apenas visual
+  const [highlighted, setHighlighted] = useState<Set<string>>(new Set())
+  // Ids que acabaram de chegar (realce breve de "nova resposta")
+  const [recentIds, setRecentIds] = useState<Set<string>>(new Set())
+  const knownIds = useRef<Set<string>>(new Set(initialResponses.map((r) => r.id)))
+
+  const toggleHighlight = useCallback((id: string) => {
+    setHighlighted((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  // Polling: busca respostas periodicamente e mescla novidades
+  useEffect(() => {
+    if (!live) return
+    let cancelled = false
+    const timeouts: ReturnType<typeof setTimeout>[] = []
+
+    async function poll() {
+      try {
+        const res = await fetch(`/api/surveys/results/${token}/responses`, {
+          cache: 'no-store',
+        })
+        if (!res.ok || cancelled) return
+        const json = (await res.json()) as { responses: SurveyResponse[] }
+        if (cancelled) return
+
+        const next = json.responses ?? []
+        const newIds = next.filter((r) => !knownIds.current.has(r.id)).map((r) => r.id)
+        for (const r of next) knownIds.current.add(r.id)
+
+        setResponses(next)
+        setLastSync(new Date())
+
+        if (newIds.length > 0) {
+          setRecentIds((prev) => {
+            const s = new Set(prev)
+            newIds.forEach((id) => s.add(id))
+            return s
+          })
+          toast({
+            title:
+              newIds.length === 1
+                ? 'Nova resposta recebida'
+                : `${newIds.length} novas respostas recebidas`,
+            type: 'success',
+          })
+          const t = setTimeout(() => {
+            if (cancelled) return
+            setRecentIds((prev) => {
+              const s = new Set(prev)
+              newIds.forEach((id) => s.delete(id))
+              return s
+            })
+          }, NEW_RESPONSE_HIGHLIGHT_MS)
+          timeouts.push(t)
+        }
+      } catch {
+        // silencioso: proxima iteracao tenta de novo
+      }
+    }
+
+    const interval = setInterval(poll, POLL_INTERVAL_MS)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+      timeouts.forEach(clearTimeout)
+    }
+  }, [live, token, toast])
 
   const active = useMemo(
     () => sortResponses(
@@ -209,8 +290,11 @@ export function SurveyResults({ survey, responses, token }: SurveyResultsProps) 
     setPendingId(response.id)
     try {
       await mutate({ archived: willArchive, scope: 'ids', ids: [response.id] })
+      const stamp = willArchive ? new Date().toISOString() : null
+      setResponses((prev) =>
+        prev.map((r) => (r.id === response.id ? { ...r, archived_at: stamp } : r))
+      )
       toast({ title: willArchive ? 'Resposta arquivada' : 'Resposta restaurada', type: 'success' })
-      router.refresh()
     } catch (err) {
       toast({
         title: 'Não foi possível atualizar',
@@ -226,6 +310,15 @@ export function SurveyResults({ survey, responses, token }: SurveyResultsProps) 
     setBulkPending(true)
     try {
       const updated = await mutate({ archived: viewingActive, scope: 'all' })
+      const stamp = new Date().toISOString()
+      setResponses((prev) =>
+        prev.map((r) => {
+          if (viewingActive) {
+            return r.archived_at === null ? { ...r, archived_at: stamp } : r
+          }
+          return r.archived_at !== null ? { ...r, archived_at: null } : r
+        })
+      )
       toast({
         title: viewingActive
           ? `${updated} ${updated === 1 ? 'resposta arquivada' : 'respostas arquivadas'}`
@@ -234,7 +327,6 @@ export function SurveyResults({ survey, responses, token }: SurveyResultsProps) 
       })
       setConfirmBulk(false)
       if (!viewingActive) setView('active')
-      router.refresh()
     } catch (err) {
       toast({
         title: 'Não foi possível atualizar',
@@ -323,9 +415,34 @@ export function SurveyResults({ survey, responses, token }: SurveyResultsProps) 
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <CardTitle className="text-base">Respostas individuais</CardTitle>
-                  <CardDescription>{SORT_LABELS[order]}.</CardDescription>
+                  <CardDescription>
+                    {SORT_LABELS[order]}.
+                    {live && lastSync && (
+                      <> {' · '}Atualizado às {lastSync.toLocaleTimeString('pt-BR')}</>
+                    )}
+                  </CardDescription>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setLive((v) => !v)}
+                    className={cn(
+                      'flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors',
+                      live
+                        ? 'border-success/40 bg-success/10 text-success'
+                        : 'text-muted-foreground hover:bg-muted'
+                    )}
+                    title={live ? 'Atualização ao vivo ativa — clique para pausar' : 'Atualização pausada — clique para retomar'}
+                    aria-pressed={live}
+                  >
+                    <span
+                      className={cn(
+                        'h-2 w-2 rounded-full',
+                        live ? 'animate-pulse bg-success' : 'bg-muted-foreground'
+                      )}
+                    />
+                    {live ? 'Ao vivo' : 'Pausado'}
+                  </button>
                   <div className="flex items-center rounded-md border p-0.5">
                     <Button
                       variant={displayMode === 'cards' ? 'secondary' : 'ghost'}
@@ -409,7 +526,15 @@ export function SurveyResults({ survey, responses, token }: SurveyResultsProps) 
                     </TableHeader>
                     <TableBody>
                       {visible.map((response) => (
-                        <TableRow key={response.id}>
+                        <TableRow
+                          key={response.id}
+                          className={cn(
+                            highlighted.has(response.id) && 'response-highlight',
+                            !highlighted.has(response.id) &&
+                              recentIds.has(response.id) &&
+                              'response-new'
+                          )}
+                        >
                           <TableCell className="whitespace-nowrap text-muted-foreground">
                             {formatDateTime(response.submitted_at)}
                           </TableCell>
@@ -428,22 +553,47 @@ export function SurveyResults({ survey, responses, token }: SurveyResultsProps) 
                             </TableCell>
                           )}
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleToggleOne(response)}
-                              disabled={pendingId === response.id}
-                              title={viewingActive ? 'Arquivar resposta' : 'Restaurar resposta'}
-                              className="text-muted-foreground hover:text-foreground"
-                            >
-                              {pendingId === response.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : viewingActive ? (
-                                <Archive className="h-4 w-4" />
-                              ) : (
-                                <RotateCcw className="h-4 w-4" />
-                              )}
-                            </Button>
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => toggleHighlight(response.id)}
+                                title={
+                                  highlighted.has(response.id)
+                                    ? 'Remover destaque'
+                                    : 'Destacar resposta'
+                                }
+                                aria-pressed={highlighted.has(response.id)}
+                                className={cn(
+                                  highlighted.has(response.id)
+                                    ? 'text-amber-500 hover:text-amber-600'
+                                    : 'text-muted-foreground hover:text-foreground'
+                                )}
+                              >
+                                <Star
+                                  className={cn(
+                                    'h-4 w-4',
+                                    highlighted.has(response.id) && 'fill-current'
+                                  )}
+                                />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleToggleOne(response)}
+                                disabled={pendingId === response.id}
+                                title={viewingActive ? 'Arquivar resposta' : 'Restaurar resposta'}
+                                className="text-muted-foreground hover:text-foreground"
+                              >
+                                {pendingId === response.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : viewingActive ? (
+                                  <Archive className="h-4 w-4" />
+                                ) : (
+                                  <RotateCcw className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -455,7 +605,13 @@ export function SurveyResults({ survey, responses, token }: SurveyResultsProps) 
                   {visible.map((response) => (
                     <div
                       key={response.id}
-                      className="rounded-lg border bg-muted/30 p-4"
+                      className={cn(
+                        'rounded-lg border bg-muted/30 p-4',
+                        highlighted.has(response.id) && 'response-highlight',
+                        !highlighted.has(response.id) &&
+                          recentIds.has(response.id) &&
+                          'response-new'
+                      )}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div>
@@ -468,22 +624,47 @@ export function SurveyResults({ survey, responses, token }: SurveyResultsProps) 
                             </p>
                           )}
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleToggleOne(response)}
-                          disabled={pendingId === response.id}
-                          title={viewingActive ? 'Arquivar resposta' : 'Restaurar resposta'}
-                          className="shrink-0 text-muted-foreground hover:text-foreground"
-                        >
-                          {pendingId === response.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : viewingActive ? (
-                            <Archive className="h-4 w-4" />
-                          ) : (
-                            <RotateCcw className="h-4 w-4" />
-                          )}
-                        </Button>
+                        <div className="flex shrink-0 items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => toggleHighlight(response.id)}
+                            title={
+                              highlighted.has(response.id)
+                                ? 'Remover destaque'
+                                : 'Destacar resposta'
+                            }
+                            aria-pressed={highlighted.has(response.id)}
+                            className={cn(
+                              highlighted.has(response.id)
+                                ? 'text-amber-500 hover:text-amber-600'
+                                : 'text-muted-foreground hover:text-foreground'
+                            )}
+                          >
+                            <Star
+                              className={cn(
+                                'h-4 w-4',
+                                highlighted.has(response.id) && 'fill-current'
+                              )}
+                            />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleToggleOne(response)}
+                            disabled={pendingId === response.id}
+                            title={viewingActive ? 'Arquivar resposta' : 'Restaurar resposta'}
+                            className="text-muted-foreground hover:text-foreground"
+                          >
+                            {pendingId === response.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : viewingActive ? (
+                              <Archive className="h-4 w-4" />
+                            ) : (
+                              <RotateCcw className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
                       </div>
 
                       <dl className="mt-4 divide-y">
