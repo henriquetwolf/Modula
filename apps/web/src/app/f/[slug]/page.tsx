@@ -41,6 +41,7 @@ export default async function PublicSurveyPage({
             slug={survey.public_slug}
             title={survey.title}
             description={survey.description}
+            submitLabel={survey.submit_label}
             questions={survey.questions}
           />
         ) : (

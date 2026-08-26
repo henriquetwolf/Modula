@@ -62,9 +62,18 @@ export const SURVEY_STATUS_LABELS: Record<SurveyStatus, string> = {
   closed: 'Encerrado',
 }
 
+/** Texto do botao de envio quando a pesquisa nao define um proprio. */
+export const DEFAULT_SUBMIT_LABEL = 'Enviar resposta'
+export const SUBMIT_LABEL_MAX_LENGTH = 60
+
 export const surveyUpdateSchema = z.object({
   title: z.string().trim().min(1, 'O título é obrigatório').max(200),
   description: z.string().trim().max(2000).default(''),
+  submit_label: z
+    .string()
+    .trim()
+    .max(SUBMIT_LABEL_MAX_LENGTH, `O texto do botão deve ter no máximo ${SUBMIT_LABEL_MAX_LENGTH} caracteres`)
+    .default(''),
   questions: questionsSchema,
   status: z.enum(SURVEY_STATUSES).optional(),
 })
@@ -75,6 +84,8 @@ export interface Survey {
   id: string
   title: string
   description: string | null
+  /** Texto do botao de envio; null usa DEFAULT_SUBMIT_LABEL. */
+  submit_label: string | null
   public_slug: string
   results_token: string
   questions: Question[]

@@ -14,8 +14,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
+  DEFAULT_SUBMIT_LABEL,
   QUESTION_TYPES,
   QUESTION_TYPE_LABELS,
+  SUBMIT_LABEL_MAX_LENGTH,
   createEmptyQuestion,
   isChoiceQuestion,
   type Question,
@@ -25,18 +27,22 @@ import {
 interface SurveyBuilderProps {
   title: string
   description: string
+  submitLabel: string
   questions: Question[]
   onTitleChange: (value: string) => void
   onDescriptionChange: (value: string) => void
+  onSubmitLabelChange: (value: string) => void
   onQuestionsChange: (questions: Question[]) => void
 }
 
 export function SurveyBuilder({
   title,
   description,
+  submitLabel,
   questions,
   onTitleChange,
   onDescriptionChange,
+  onSubmitLabelChange,
   onQuestionsChange,
 }: SurveyBuilderProps) {
   function updateQuestion(index: number, patch: Partial<Question>) {
@@ -92,6 +98,19 @@ export function SurveyBuilder({
               placeholder="Texto exibido no topo do formulário para quem vai responder."
               rows={3}
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="survey-submit-label">Texto do botão de envio (opcional)</Label>
+            <Input
+              id="survey-submit-label"
+              value={submitLabel}
+              onChange={(e) => onSubmitLabelChange(e.target.value)}
+              placeholder={DEFAULT_SUBMIT_LABEL}
+              maxLength={SUBMIT_LABEL_MAX_LENGTH}
+            />
+            <p className="text-xs text-muted-foreground">
+              Deixe em branco para usar &ldquo;{DEFAULT_SUBMIT_LABEL}&rdquo;.
+            </p>
           </div>
         </CardContent>
       </Card>

@@ -34,6 +34,7 @@ export function SurveyEditor({ survey }: SurveyEditorProps) {
 
   const [title, setTitle] = useState(survey.title)
   const [description, setDescription] = useState(survey.description ?? '')
+  const [submitLabel, setSubmitLabel] = useState(survey.submit_label ?? '')
   const [questions, setQuestions] = useState<Question[]>(survey.questions)
   const [status, setStatus] = useState<SurveyStatus>(survey.status)
   const [saving, setSaving] = useState(false)
@@ -72,6 +73,7 @@ export function SurveyEditor({ survey }: SurveyEditorProps) {
           body: JSON.stringify({
             title,
             description,
+            submit_label: submitLabel,
             questions: parsedQuestions.data,
             ...(nextStatus ? { status: nextStatus } : {}),
           }),
@@ -102,7 +104,7 @@ export function SurveyEditor({ survey }: SurveyEditorProps) {
         setSaving(false)
       }
     },
-    [description, questions, router, survey.id, title, toast]
+    [description, questions, router, submitLabel, survey.id, title, toast]
   )
 
   return (
@@ -159,9 +161,11 @@ export function SurveyEditor({ survey }: SurveyEditorProps) {
           <SurveyBuilder
             title={title}
             description={description}
+            submitLabel={submitLabel}
             questions={questions}
             onTitleChange={setTitle}
             onDescriptionChange={setDescription}
+            onSubmitLabelChange={setSubmitLabel}
             onQuestionsChange={setQuestions}
           />
         </TabsContent>

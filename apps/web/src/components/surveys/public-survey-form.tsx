@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import {
+  DEFAULT_SUBMIT_LABEL,
   buildAnswersSchema,
   type AnswerValue,
   type Question,
@@ -18,6 +19,7 @@ interface PublicSurveyFormProps {
   slug: string
   title: string
   description: string | null
+  submitLabel: string | null
   questions: Question[]
 }
 
@@ -35,8 +37,10 @@ export function PublicSurveyForm({
   slug,
   title,
   description,
+  submitLabel,
   questions,
 }: PublicSurveyFormProps) {
+  const buttonLabel = submitLabel?.trim() || DEFAULT_SUBMIT_LABEL
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>(() =>
     initialAnswers(questions)
   )
@@ -253,7 +257,7 @@ export function PublicSurveyForm({
 
       <Button type="submit" disabled={submitting} className="w-full gap-2" size="lg">
         {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-        Enviar resposta
+        {buttonLabel}
       </Button>
     </form>
   )

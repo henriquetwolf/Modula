@@ -20,7 +20,7 @@ export async function PATCH(
       return jsonError(parsed.error.issues[0]?.message ?? 'Dados invalidos.', 400)
     }
 
-    const { title, description, questions, status } = parsed.data
+    const { title, description, submit_label, questions, status } = parsed.data
 
     if (status === 'published' && questions.length === 0) {
       return jsonError('Adicione ao menos uma pergunta antes de publicar.', 400)
@@ -32,6 +32,8 @@ export async function PATCH(
       .update({
         title,
         description,
+        // Vazio volta para null para o formulario publico usar o texto padrao
+        submit_label: submit_label.length > 0 ? submit_label : null,
         questions,
         ...(status ? { status } : {}),
       })
