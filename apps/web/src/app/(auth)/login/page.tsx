@@ -100,13 +100,6 @@ export default function LoginPage() {
         <Button type="submit" className="w-full bg-teal-600 hover:bg-teal-700" disabled={isSubmitting}>
           {isSubmitting ? 'Entrando...' : 'Entrar'}
         </Button>
-
-        <p className="text-center text-sm text-gray-600">
-          Não tem conta?{' '}
-          <Link href="/register" className="font-medium text-teal-600 hover:text-teal-700 hover:underline">
-            Criar conta
-          </Link>
-        </p>
       </form>
     </div>
   )
