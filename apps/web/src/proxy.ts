@@ -34,7 +34,13 @@ export async function proxy(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/auth/') ||
     request.nextUrl.pathname.startsWith('/onboarding')
 
-  if (!user && !isAuthPage && request.nextUrl.pathname !== '/') {
+  // Formularios de pesquisa: /f/{slug} responde, /r/{token} ve as respostas.
+  // Ambos precisam funcionar sem login.
+  const isPublicSurveyPage =
+    request.nextUrl.pathname.startsWith('/f/') ||
+    request.nextUrl.pathname.startsWith('/r/')
+
+  if (!user && !isAuthPage && !isPublicSurveyPage && request.nextUrl.pathname !== '/') {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)

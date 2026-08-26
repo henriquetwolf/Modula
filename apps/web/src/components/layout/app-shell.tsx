@@ -137,6 +137,7 @@ const NAV_SECTIONS: SidebarNavSection[] = [
     items: [
       { label: 'CRM', href: '/crm', icon: Target },
       { label: 'Comunicação', href: '/communication', icon: MessageSquare },
+      { label: 'Pesquisas', href: '/pesquisas', icon: ClipboardList },
     ],
   },
   {
@@ -202,6 +203,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/nutri/progress': 'Evolução Nutricional',
   '/crm': 'CRM Comercial',
   '/communication': 'Comunicação',
+  '/pesquisas': 'Pesquisas',
   '/analytics': 'Analytics & BI',
   '/ai': 'AI Copiloto',
   '/habits': 'Hábitos & Adesão',
