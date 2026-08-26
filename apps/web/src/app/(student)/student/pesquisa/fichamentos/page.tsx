@@ -54,7 +54,7 @@ export default function FichamentosPage() {
   const [editingNotes, setEditingNotes] = useState<string | null>(null)
   const [notesText, setNotesText] = useState('')
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const { toast } = useToast()
+  const { add: toast } = useToast()
 
   const loadFichamentos = useCallback(async () => {
     const { data } = await supabase
@@ -73,13 +73,14 @@ export default function FichamentosPage() {
   useEffect(() => { loadFichamentos() }, [loadFichamentos])
 
   async function savePersonalNotes(fichamentoId: string) {
-    const { error } = await supabase
+    // article_fichamentos nao esta no tipo Database (parcial), por isso o cast
+    const { error } = await (supabase as any)
       .from('article_fichamentos')
       .update({ personal_notes: notesText || null })
       .eq('id', fichamentoId)
 
     if (error) {
-      toast({ title: 'Erro', description: 'Erro ao salvar notas', variant: 'destructive' })
+      toast({ title: 'Erro', description: 'Erro ao salvar notas', type: 'destructive' })
       return
     }
 
@@ -98,7 +99,7 @@ export default function FichamentosPage() {
       .eq('id', fichamentoId)
 
     if (error) {
-      toast({ title: 'Erro', description: 'Erro ao excluir fichamento', variant: 'destructive' })
+      toast({ title: 'Erro', description: 'Erro ao excluir fichamento', type: 'destructive' })
       setDeletingId(null)
       return
     }

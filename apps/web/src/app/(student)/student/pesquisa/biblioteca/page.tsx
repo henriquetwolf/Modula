@@ -33,7 +33,7 @@ export default function BibliotecaPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [generatingId, setGeneratingId] = useState<string | null>(null)
-  const { toast } = useToast()
+  const { add: toast } = useToast()
 
   const loadArticles = useCallback(async () => {
     const { data } = await supabase
@@ -87,7 +87,7 @@ export default function BibliotecaPage() {
       }
 
       if (!res.ok) {
-        toast({ title: 'Erro', description: data.error || 'Erro ao gerar fichamento', variant: 'destructive' })
+        toast({ title: 'Erro', description: data.error || 'Erro ao gerar fichamento', type: 'destructive' })
         return
       }
 
@@ -96,7 +96,7 @@ export default function BibliotecaPage() {
         a.article_metadata?.id === articleId ? { ...a, has_fichamento: true } : a
       ))
     } catch {
-      toast({ title: 'Erro', description: 'Erro de conexão ao gerar fichamento', variant: 'destructive' })
+      toast({ title: 'Erro', description: 'Erro de conexão ao gerar fichamento', type: 'destructive' })
     } finally {
       setGeneratingId(null)
     }
