@@ -266,7 +266,14 @@ export function SurveyResults({ survey, responses: initialResponses, token }: Su
     [responses, order]
   )
 
-  const visible = view === 'active' ? active : archived
+  // Respostas destacadas ficam sempre no topo, preservando a ordem entre si
+  const visible = useMemo(() => {
+    const base = view === 'active' ? active : archived
+    if (highlighted.size === 0) return base
+    const pinned = base.filter((r) => highlighted.has(r.id))
+    const rest = base.filter((r) => !highlighted.has(r.id))
+    return [...pinned, ...rest]
+  }, [view, active, archived, highlighted])
   // Na aba ativa a acao arquiva; na aba arquivada a acao restaura
   const viewingActive = view === 'active'
 
