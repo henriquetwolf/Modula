@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Archive, Download, Inbox, Loader2, RotateCcw } from 'lucide-react'
+import { Archive, Download, Inbox, LayoutGrid, List, Loader2, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,6 +14,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import {
   Dialog,
   DialogContent,
@@ -42,6 +50,7 @@ interface SurveyResultsProps {
 
 type View = 'active' | 'archived'
 type SortOrder = 'newest' | 'oldest'
+type DisplayMode = 'cards' | 'list'
 
 const SORT_LABELS: Record<SortOrder, string> = {
   newest: 'Da mais recente para a mais antiga',
@@ -156,6 +165,7 @@ export function SurveyResults({ survey, responses, token }: SurveyResultsProps) 
   const { add: toast } = useToast()
   const [view, setView] = useState<View>('active')
   const [order, setOrder] = useState<SortOrder>('newest')
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('cards')
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [bulkPending, setBulkPending] = useState(false)
   const [confirmBulk, setConfirmBulk] = useState(false)
@@ -316,6 +326,28 @@ export function SurveyResults({ survey, responses, token }: SurveyResultsProps) 
                   <CardDescription>{SORT_LABELS[order]}.</CardDescription>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center rounded-md border p-0.5">
+                    <Button
+                      variant={displayMode === 'cards' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      onClick={() => setDisplayMode('cards')}
+                      className="gap-1.5"
+                      aria-pressed={displayMode === 'cards'}
+                    >
+                      <LayoutGrid className="h-4 w-4" />
+                      Cartões
+                    </Button>
+                    <Button
+                      variant={displayMode === 'list' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      onClick={() => setDisplayMode('list')}
+                      className="gap-1.5"
+                      aria-pressed={displayMode === 'list'}
+                    >
+                      <List className="h-4 w-4" />
+                      Lista
+                    </Button>
+                  </div>
                   <Select value={order} onValueChange={(value) => setOrder(value as SortOrder)}>
                     <SelectTrigger className="w-[240px]">
                       <SelectValue />
@@ -358,6 +390,66 @@ export function SurveyResults({ survey, responses, token }: SurveyResultsProps) 
                     ? 'Todas as respostas estão arquivadas.'
                     : 'Nenhuma resposta arquivada.'}
                 </p>
+              ) : displayMode === 'list' ? (
+                <div className="-mx-6 overflow-x-auto px-6">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="whitespace-nowrap">Data/hora</TableHead>
+                        {survey.questions.map((question) => (
+                          <TableHead key={question.id} className="min-w-[160px]">
+                            {question.label}
+                          </TableHead>
+                        ))}
+                        {!viewingActive && (
+                          <TableHead className="whitespace-nowrap">Arquivada em</TableHead>
+                        )}
+                        <TableHead className="text-right">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {visible.map((response) => (
+                        <TableRow key={response.id}>
+                          <TableCell className="whitespace-nowrap text-muted-foreground">
+                            {formatDateTime(response.submitted_at)}
+                          </TableCell>
+                          {survey.questions.map((question) => (
+                            <TableCell key={question.id} className="align-top">
+                              {formatAnswer(response.answers[question.id]) || (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          ))}
+                          {!viewingActive && (
+                            <TableCell className="whitespace-nowrap text-muted-foreground">
+                              {response.archived_at
+                                ? formatDateTime(response.archived_at)
+                                : '—'}
+                            </TableCell>
+                          )}
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleToggleOne(response)}
+                              disabled={pendingId === response.id}
+                              title={viewingActive ? 'Arquivar resposta' : 'Restaurar resposta'}
+                              className="text-muted-foreground hover:text-foreground"
+                            >
+                              {pendingId === response.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : viewingActive ? (
+                                <Archive className="h-4 w-4" />
+                              ) : (
+                                <RotateCcw className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               ) : (
                 <div className="space-y-4">
                   {visible.map((response) => (
