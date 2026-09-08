@@ -49,6 +49,8 @@ export function PrizeDrawStage({ prizes, winners, onResult, onExit }: PrizeDrawS
   const [confirmUndo, setConfirmUndo] = useState(false)
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // onExit vem inline do pai; guardar em ref evita reiniciar a tela cheia a cada render
+  const onExitRef = useRef(onExit)
 
   const currentPrize = prizes.find((prize) => prize.id === currentId) ?? null
   const currentWinners = winners.filter((winner) => winner.prize_id === currentId)
@@ -62,6 +64,10 @@ export function PrizeDrawStage({ prizes, winners, onResult, onExit }: PrizeDrawS
   }
 
   useEffect(() => clearTimer, [])
+
+  useEffect(() => {
+    onExitRef.current = onExit
+  }, [onExit])
 
   // Trocar de premio zera a animacao; premio ja sorteado abre no resultado
   useEffect(() => {
@@ -79,6 +85,29 @@ export function PrizeDrawStage({ prizes, winners, onResult, onExit }: PrizeDrawS
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
   }, [onExit])
+
+  // Tela cheia real durante a transmissao: esconde a barra de endereco do navegador.
+  // Deps vazias de proposito: reentrar na tela cheia a cada render faria a tela piscar.
+  useEffect(() => {
+    if (!document.fullscreenElement) {
+      // Sem gesto do usuario o navegador recusa a promise; ignorar mantem o palco aberto
+      document.documentElement.requestFullscreen?.().catch(() => {})
+    }
+
+    // Esc/F11 saem da tela cheia sem avisar a pagina: fechar o palco evita expor a URL
+    function handleFullscreenChange() {
+      if (!document.fullscreenElement) onExitRef.current()
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+      if (document.fullscreenElement) {
+        document.exitFullscreen?.().catch(() => {})
+      }
+    }
+  }, [])
 
   /** Embaralha nomes com desaceleracao progressiva e revela o resultado no fim. */
   const runReel = useCallback((names: string[], onDone: () => void) => {
@@ -275,191 +304,194 @@ export function PrizeDrawStage({ prizes, winners, onResult, onExit }: PrizeDrawS
         </div>
       </header>
 
-      {/* Palco */}
-      <main className="relative flex flex-1 flex-col items-center justify-center px-6 text-center">
-        {!currentPrize ? (
-          <p className="text-xl text-teal-100/70">
-            Cadastre os prêmios para começar o sorteio.
-          </p>
-        ) : (
-          <>
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-teal-300/80 sm:text-sm">
-              Prêmio {prizes.indexOf(currentPrize) + 1} de {prizes.length}
+      {/* Palco: min-h-0 + scroll interno para a trilha de premios nunca ser cortada */}
+      <main className="relative flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-4 text-center">
+        {/* m-auto (em vez de justify-center) centraliza sem cortar o topo quando ha scroll */}
+        <div className="m-auto flex w-full flex-col items-center">
+          {!currentPrize ? (
+            <p className="text-xl text-teal-100/70">
+              Cadastre os prêmios para começar o sorteio.
             </p>
-
-            <h2 className="mt-3 max-w-4xl text-balance text-3xl font-bold leading-tight sm:text-5xl lg:text-6xl">
-              {currentPrize.name}
-            </h2>
-
-            {currentPrize.description && (
-              <p className="mt-3 max-w-2xl text-base text-teal-100/70 sm:text-lg">
-                {currentPrize.description}
+          ) : (
+            <>
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-teal-300/80 sm:text-sm">
+                Prêmio {prizes.indexOf(currentPrize) + 1} de {prizes.length}
               </p>
-            )}
 
-            {currentPrize.quantity > 1 && (
-              <p className="mt-2 text-sm font-semibold uppercase tracking-[0.2em] text-teal-300/80">
-                {currentPrize.quantity} unidades
-              </p>
-            )}
+              <h2 className="mt-3 max-w-4xl text-balance text-3xl font-bold leading-tight sm:text-5xl lg:text-6xl">
+                {currentPrize.name}
+              </h2>
 
-            {/* Area do resultado */}
-            <div className="relative mt-10 flex min-h-[9rem] w-full max-w-5xl items-center justify-center sm:mt-14 sm:min-h-[12rem]">
-              {phase === 'idle' ? (
-                <button
-                  type="button"
-                  onClick={handleDraw}
-                  className="group relative rounded-full bg-gradient-to-r from-teal-400 to-cyan-400 px-14 py-6 text-2xl font-black uppercase tracking-[0.18em] text-[#04252b] shadow-[0_0_60px_-10px_rgba(45,212,191,0.8)] transition-transform hover:scale-105 active:scale-100 sm:px-20 sm:py-7 sm:text-3xl"
-                >
-                  <span className="raffle-glow absolute inset-0 -z-10 rounded-full bg-teal-400 blur-2xl" />
-                  Sortear
-                </button>
-              ) : (
-                <div className="relative w-full">
-                  {phase === 'revealed' && !isMultiReveal && (
-                    <span className="raffle-ring pointer-events-none absolute left-1/2 top-1/2 -z-10 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-teal-300" />
-                  )}
-                  <span className="raffle-glow pointer-events-none absolute inset-x-0 top-1/2 -z-10 mx-auto h-32 max-w-3xl -translate-y-1/2 rounded-full bg-teal-400/25 blur-3xl" />
-
-                  {isMultiReveal ? (
-                    // Varios ganhadores revelados de uma vez: grade de nomes
-                    <div className="raffle-reveal mx-auto grid w-full max-w-5xl grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                      {winnerEntries.map((entry) => (
-                        <div
-                          key={entry.cpf}
-                          className="rounded-xl border border-white/15 bg-white/5 px-3 py-3 text-center"
-                        >
-                          <p className="truncate text-lg font-bold leading-tight sm:text-xl">
-                            {privacyName(entry.full_name)}
-                          </p>
-                          <p className="mt-1 font-mono text-[0.7rem] tracking-widest text-teal-200/70">
-                            {maskCpf(entry.cpf)}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <>
-                      <p
-                        key={phase === 'rolling' ? reelTick : winnerEntries[0]?.full_name ?? ''}
-                        className={cn(
-                          'text-balance break-words px-4 text-4xl font-bold leading-tight sm:text-6xl lg:text-7xl',
-                          phase === 'rolling' && 'raffle-shuffle text-teal-100/60',
-                          phase !== 'rolling' && 'raffle-reveal text-white'
-                        )}
-                      >
-                        {(phase === 'rolling'
-                          ? privacyName(reelName)
-                          : privacyName(winnerEntries[0]?.full_name ?? '')) || '\u00A0'}
-                      </p>
-
-                      {phase !== 'rolling' && winnerEntries[0]?.cpf && (
-                        <p className="mt-4 font-mono text-lg tracking-widest text-teal-200/70 sm:text-xl">
-                          {maskCpf(winnerEntries[0].cpf)}
-                        </p>
-                      )}
-                    </>
-                  )}
-
-                  {phase === 'confirmed' && (
-                    <p className="mt-5 inline-flex items-center gap-2 rounded-full bg-teal-400/15 px-5 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-teal-200">
-                      <Trophy className="h-4 w-4" />
-                      {winnerEntries.length > 1
-                        ? `${winnerEntries.length} premiados confirmados`
-                        : 'Premiado confirmado'}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Acoes */}
-            <div className="mt-10 flex min-h-[3.5rem] flex-wrap items-center justify-center gap-3">
-              {phase === 'rolling' && (
-                <span className="flex items-center gap-2 text-teal-200/60">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Sorteando...
-                </span>
+              {currentPrize.description && (
+                <p className="mt-3 max-w-2xl text-base text-teal-100/70 sm:text-lg">
+                  {currentPrize.description}
+                </p>
               )}
 
-              {phase === 'revealed' && (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleConfirm}
-                    disabled={confirming}
-                    className="inline-flex items-center gap-2 rounded-full bg-teal-400 px-10 py-4 text-lg font-bold uppercase tracking-wider text-[#04252b] transition-transform hover:scale-105 disabled:opacity-60"
-                  >
-                    {confirming ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                      <Check className="h-5 w-5" />
-                    )}
-                    {candidates.length > 1 ? `Confirmar ${candidates.length} ganhadores` : 'Confirmar'}
-                  </button>
+              {currentPrize.quantity > 1 && (
+                <p className="mt-2 text-sm font-semibold uppercase tracking-[0.2em] text-teal-300/80">
+                  {currentPrize.quantity} unidades
+                </p>
+              )}
+
+              {/* Area do resultado */}
+              <div className="relative mt-10 flex min-h-[9rem] w-full max-w-5xl items-center justify-center sm:mt-14 sm:min-h-[12rem]">
+                {phase === 'idle' ? (
                   <button
                     type="button"
                     onClick={handleDraw}
-                    disabled={confirming}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/20 px-8 py-4 text-base font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-60"
+                    className="group relative rounded-full bg-gradient-to-r from-teal-400 to-cyan-400 px-14 py-6 text-2xl font-black uppercase tracking-[0.18em] text-[#04252b] shadow-[0_0_60px_-10px_rgba(45,212,191,0.8)] transition-transform hover:scale-105 active:scale-100 sm:px-20 sm:py-7 sm:text-3xl"
                   >
-                    <RotateCw className="h-4 w-4" />
-                    Sortear novamente
+                    <span className="raffle-glow absolute inset-0 -z-10 rounded-full bg-teal-400 blur-2xl" />
+                    Sortear
                   </button>
-                </>
-              )}
+                ) : (
+                  <div className="relative w-full">
+                    {phase === 'revealed' && !isMultiReveal && (
+                      <span className="raffle-ring pointer-events-none absolute left-1/2 top-1/2 -z-10 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-teal-300" />
+                    )}
+                    <span className="raffle-glow pointer-events-none absolute inset-x-0 top-1/2 -z-10 mx-auto h-32 max-w-3xl -translate-y-1/2 rounded-full bg-teal-400/25 blur-3xl" />
 
-              {phase === 'confirmed' && (
-                <>
-                  {hasNextPending ? (
+                    {isMultiReveal ? (
+                      // Varios ganhadores revelados de uma vez: grade de nomes
+                      <div className="raffle-reveal mx-auto grid w-full max-w-5xl grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                        {winnerEntries.map((entry) => (
+                          <div
+                            key={entry.cpf}
+                            className="rounded-xl border border-white/15 bg-white/5 px-3 py-3 text-center"
+                          >
+                            <p className="truncate text-lg font-bold leading-tight sm:text-xl">
+                              {privacyName(entry.full_name)}
+                            </p>
+                            <p className="mt-1 font-mono text-[0.7rem] tracking-widest text-teal-200/70">
+                              {maskCpf(entry.cpf)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <>
+                        <p
+                          key={phase === 'rolling' ? reelTick : winnerEntries[0]?.full_name ?? ''}
+                          className={cn(
+                            'text-balance break-words px-4 text-4xl font-bold leading-tight sm:text-6xl lg:text-7xl',
+                            phase === 'rolling' && 'raffle-shuffle text-teal-100/60',
+                            phase !== 'rolling' && 'raffle-reveal text-white'
+                          )}
+                        >
+                          {(phase === 'rolling'
+                            ? privacyName(reelName)
+                            : privacyName(winnerEntries[0]?.full_name ?? '')) || '\u00A0'}
+                        </p>
+
+                        {phase !== 'rolling' && winnerEntries[0]?.cpf && (
+                          <p className="mt-4 font-mono text-lg tracking-widest text-teal-200/70 sm:text-xl">
+                            {maskCpf(winnerEntries[0].cpf)}
+                          </p>
+                        )}
+                      </>
+                    )}
+
+                    {phase === 'confirmed' && (
+                      <p className="mt-5 inline-flex items-center gap-2 rounded-full bg-teal-400/15 px-5 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-teal-200">
+                        <Trophy className="h-4 w-4" />
+                        {winnerEntries.length > 1
+                          ? `${winnerEntries.length} premiados confirmados`
+                          : 'Premiado confirmado'}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Acoes */}
+              <div className="mt-10 flex min-h-[3.5rem] flex-wrap items-center justify-center gap-3">
+                {phase === 'rolling' && (
+                  <span className="flex items-center gap-2 text-teal-200/60">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Sorteando...
+                  </span>
+                )}
+
+                {phase === 'revealed' && (
+                  <>
                     <button
                       type="button"
-                      onClick={goToNextPending}
-                      className="inline-flex items-center gap-2 rounded-full bg-white/10 px-10 py-4 text-lg font-semibold text-white transition-colors hover:bg-white/20"
+                      onClick={handleConfirm}
+                      disabled={confirming}
+                      className="inline-flex items-center gap-2 rounded-full bg-teal-400 px-10 py-4 text-lg font-bold uppercase tracking-wider text-[#04252b] transition-transform hover:scale-105 disabled:opacity-60"
                     >
-                      <Sparkles className="h-5 w-5" />
-                      Próximo prêmio
+                      {confirming ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <Check className="h-5 w-5" />
+                      )}
+                      {candidates.length > 1 ? `Confirmar ${candidates.length} ganhadores` : 'Confirmar'}
                     </button>
-                  ) : (
-                    <p className="text-lg text-teal-200/70">Todos os prêmios foram sorteados.</p>
-                  )}
-
-                  {confirmUndo ? (
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm text-white/70">
-                      Apagar este premiado e sortear de novo?
-                      <button
-                        type="button"
-                        onClick={handleUndo}
-                        disabled={undoing}
-                        className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-4 py-1.5 font-semibold text-white transition-colors hover:bg-white/25 disabled:opacity-60"
-                      >
-                        {undoing && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                        Sim, refazer
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfirmUndo(false)}
-                        disabled={undoing}
-                        className="rounded-full px-3 py-1.5 text-white/50 transition-colors hover:text-white"
-                      >
-                        Cancelar
-                      </button>
-                    </span>
-                  ) : (
                     <button
                       type="button"
-                      onClick={() => setConfirmUndo(true)}
-                      className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm text-white/30 transition-colors hover:bg-white/10 hover:text-white/80"
+                      onClick={handleDraw}
+                      disabled={confirming}
+                      className="inline-flex items-center gap-2 rounded-full border border-white/20 px-8 py-4 text-base font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-60"
                     >
-                      <RotateCcw className="h-4 w-4" />
-                      Refazer este sorteio
+                      <RotateCw className="h-4 w-4" />
+                      Sortear novamente
                     </button>
-                  )}
-                </>
-              )}
-            </div>
-          </>
-        )}
+                  </>
+                )}
+
+                {phase === 'confirmed' && (
+                  <>
+                    {hasNextPending ? (
+                      <button
+                        type="button"
+                        onClick={goToNextPending}
+                        className="inline-flex items-center gap-2 rounded-full bg-white/10 px-10 py-4 text-lg font-semibold text-white transition-colors hover:bg-white/20"
+                      >
+                        <Sparkles className="h-5 w-5" />
+                        Próximo prêmio
+                      </button>
+                    ) : (
+                      <p className="text-lg text-teal-200/70">Todos os prêmios foram sorteados.</p>
+                    )}
+
+                    {confirmUndo ? (
+                      <span className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm text-white/70">
+                        Apagar este premiado e sortear de novo?
+                        <button
+                          type="button"
+                          onClick={handleUndo}
+                          disabled={undoing}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-4 py-1.5 font-semibold text-white transition-colors hover:bg-white/25 disabled:opacity-60"
+                        >
+                          {undoing && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                          Sim, refazer
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmUndo(false)}
+                          disabled={undoing}
+                          className="rounded-full px-3 py-1.5 text-white/50 transition-colors hover:text-white"
+                        >
+                          Cancelar
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmUndo(true)}
+                        className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm text-white/30 transition-colors hover:bg-white/10 hover:text-white/80"
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        Refazer este sorteio
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </main>
 
       {/* Trilha de premios */}
