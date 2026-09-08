@@ -47,6 +47,7 @@ import {
   Trophy,
   School,
   Crown,
+  Gift,
 } from 'lucide-react'
 import { getSupabaseBrowser } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -77,6 +78,7 @@ const NAV_SECTIONS: SidebarNavSection[] = [
     items: [
       { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
       { label: 'Pesquisas', href: '/pesquisas', icon: ClipboardList },
+      { label: 'Sorteio', href: '/sorteio', icon: Gift },
       { label: 'Clientes', href: '/clients', icon: Users },
       { label: 'Agenda', href: '/agenda', icon: Calendar },
       { label: 'Prontuário', href: '/records', icon: FileHeart },
@@ -204,6 +206,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/crm': 'CRM Comercial',
   '/communication': 'Comunicação',
   '/pesquisas': 'Pesquisas',
+  '/sorteio': 'Sorteio',
   '/analytics': 'Analytics & BI',
   '/ai': 'AI Copiloto',
   '/habits': 'Hábitos & Adesão',
