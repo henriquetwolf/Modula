@@ -1,11 +1,12 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Check, Loader2, Minimize2, RotateCw, Sparkles, Trophy } from 'lucide-react'
+import { Check, Loader2, Minimize2, RotateCcw, RotateCw, Sparkles, Trophy } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import {
   maskCpf,
+  privacyName,
   type RaffleCandidate,
   type RaffleListWithCount,
   type RafflePrize,
@@ -43,6 +44,9 @@ export function PrizeDrawStage({ prizes, winners, onResult, onExit }: PrizeDrawS
   const [reelTick, setReelTick] = useState(0)
   const [candidate, setCandidate] = useState<RaffleCandidate | null>(null)
   const [confirming, setConfirming] = useState(false)
+  const [undoing, setUndoing] = useState(false)
+  // Refazer pede uma segunda confirmacao para nao apagar um premiado por engano
+  const [confirmUndo, setConfirmUndo] = useState(false)
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -64,6 +68,7 @@ export function PrizeDrawStage({ prizes, winners, onResult, onExit }: PrizeDrawS
     clearTimer()
     setCandidate(null)
     setReelName('')
+    setConfirmUndo(false)
     setPhase(currentPrize?.status === 'drawn' ? 'confirmed' : 'idle')
   }, [currentId, currentPrize?.status])
 
@@ -77,11 +82,19 @@ export function PrizeDrawStage({ prizes, winners, onResult, onExit }: PrizeDrawS
 
   /** Embaralha nomes com desaceleracao progressiva e revela o resultado no fim. */
   const runReel = useCallback((names: string[], onDone: () => void) => {
-    const pool = names.length > 0 ? names : ['...']
+    const pool = names.length > 0 ? [...names] : ['...']
+
+    // Fisher-Yates: cada sorteio embaralha a ordem de novo
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[pool[i], pool[j]] = [pool[j], pool[i]]
+    }
+
     let step = 0
 
     const tick = () => {
-      setReelName(pool[Math.floor(Math.random() * pool.length)])
+      // Percorrer a lista embaralhada evita repetir o mesmo nome em sequencia
+      setReelName(pool[step % pool.length])
       setReelTick((value) => value + 1)
       step += 1
 
@@ -154,6 +167,37 @@ export function PrizeDrawStage({ prizes, winners, onResult, onExit }: PrizeDrawS
     }
   }
 
+  /**
+   * Apaga o premiado ja confirmado e libera o premio para ser sorteado de novo.
+   * A pessoa volta a concorrer nos proximos sorteios.
+   */
+  async function handleUndo() {
+    if (!currentPrize) return
+
+    setUndoing(true)
+    try {
+      const res = await fetch('/api/raffle/draw/undo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prize_id: currentPrize.id }),
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        toast({ title: 'Não foi possível refazer', description: data.error, type: 'destructive' })
+        return
+      }
+
+      // O premio volta a 'pending' e o efeito devolve a tela ao estado inicial
+      onResult(data)
+      setConfirmUndo(false)
+    } catch {
+      toast({ title: 'Erro de conexão', description: 'Tente novamente.', type: 'destructive' })
+    } finally {
+      setUndoing(false)
+    }
+  }
+
   function goToNextPending() {
     const next = prizes.find((prize) => prize.status === 'pending' && prize.id !== currentId)
     if (next) setCurrentId(next.id)
@@ -172,12 +216,16 @@ export function PrizeDrawStage({ prizes, winners, onResult, onExit }: PrizeDrawS
     []
   )
 
-  const displayName =
+  const rawName =
     phase === 'confirmed'
       ? currentWinner?.full_name ?? candidate?.full_name ?? ''
       : phase === 'revealed'
         ? candidate?.full_name ?? ''
         : reelName
+
+  // Na transmissao so aparece o primeiro nome com as iniciais do sobrenome,
+  // inclusive durante o embaralhamento
+  const displayName = privacyName(rawName)
 
   const displayCpf =
     phase === 'confirmed'
@@ -338,19 +386,53 @@ export function PrizeDrawStage({ prizes, winners, onResult, onExit }: PrizeDrawS
                 </>
               )}
 
-              {phase === 'confirmed' && hasNextPending && (
-                <button
-                  type="button"
-                  onClick={goToNextPending}
-                  className="inline-flex items-center gap-2 rounded-full bg-white/10 px-10 py-4 text-lg font-semibold text-white transition-colors hover:bg-white/20"
-                >
-                  <Sparkles className="h-5 w-5" />
-                  Próximo prêmio
-                </button>
-              )}
+              {phase === 'confirmed' && (
+                <>
+                  {hasNextPending ? (
+                    <button
+                      type="button"
+                      onClick={goToNextPending}
+                      className="inline-flex items-center gap-2 rounded-full bg-white/10 px-10 py-4 text-lg font-semibold text-white transition-colors hover:bg-white/20"
+                    >
+                      <Sparkles className="h-5 w-5" />
+                      Próximo prêmio
+                    </button>
+                  ) : (
+                    <p className="text-lg text-teal-200/70">Todos os prêmios foram sorteados.</p>
+                  )}
 
-              {phase === 'confirmed' && !hasNextPending && (
-                <p className="text-lg text-teal-200/70">Todos os prêmios foram sorteados.</p>
+                  {confirmUndo ? (
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm text-white/70">
+                      Apagar este premiado e sortear de novo?
+                      <button
+                        type="button"
+                        onClick={handleUndo}
+                        disabled={undoing}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-4 py-1.5 font-semibold text-white transition-colors hover:bg-white/25 disabled:opacity-60"
+                      >
+                        {undoing && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                        Sim, refazer
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmUndo(false)}
+                        disabled={undoing}
+                        className="rounded-full px-3 py-1.5 text-white/50 transition-colors hover:text-white"
+                      >
+                        Cancelar
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmUndo(true)}
+                      className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm text-white/30 transition-colors hover:bg-white/10 hover:text-white/80"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Refazer este sorteio
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </>

@@ -223,16 +223,35 @@ export async function drawCandidate(
 }
 
 /**
- * Alguns nomes aleatorios da lista para alimentar a animacao do sorteio.
+ * Amostra de nomes para alimentar a animacao do sorteio.
  * Sao apenas visuais: o resultado real vem de drawCandidate.
+ *
+ * Ordenar por id embaralha os nomes, porque o id e um uuid aleatorio e nao
+ * tem relacao com a ordem alfabetica da planilha importada. O deslocamento
+ * sorteado a cada chamada faz a animacao mudar a cada sorteio.
  */
 export async function sampleNames(listId: string, limit = 60): Promise<string[]> {
   const service = getServiceClient()
+
+  const total = await countParticipants(listId, null)
+  if (total === 0) return []
+
+  const offset = total > limit ? randomInt(total - limit + 1) : 0
+
   const { data } = await (service as any)
     .from('raffle_participants')
     .select('full_name')
     .eq('list_id', listId)
-    .limit(limit)
+    .order('id', { ascending: true })
+    .range(offset, offset + limit - 1)
 
-  return ((data as { full_name: string }[] | null) ?? []).map((row) => row.full_name)
+  const names = ((data as { full_name: string }[] | null) ?? []).map((row) => row.full_name)
+
+  // Embaralha a janela para a sequencia nao sair sempre igual
+  for (let i = names.length - 1; i > 0; i--) {
+    const j = randomInt(i + 1)
+    ;[names[i], names[j]] = [names[j], names[i]]
+  }
+
+  return names
 }

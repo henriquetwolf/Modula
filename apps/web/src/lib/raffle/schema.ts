@@ -126,18 +126,31 @@ export function formatCpf(cpf: string): string {
 }
 
 /**
- * Versao mascarada para exibir na transmissao ao vivo: ***.123.456-**
- * Mostra o suficiente para a pessoa se reconhecer sem expor o CPF inteiro.
+ * Versao mascarada para exibir na transmissao ao vivo: ***.456.***-**
+ * Expoe apenas tres digitos consecutivos, o suficiente para a pessoa se
+ * reconhecer sem mostrar o documento na tela.
  */
 export function maskCpf(cpf: string): string {
   const digits = cpf.replace(/\D/g, '')
   if (digits.length !== 11) return '***'
-  return `***.${digits.slice(3, 6)}.${digits.slice(6, 9)}-**`
+  return `***.${digits.slice(3, 6)}.***-**`
 }
 
-/** Primeiro e ultimo nome, usado quando o nome completo nao cabe na tela. */
-export function shortName(fullName: string): string {
-  const parts = fullName.trim().split(/\s+/)
-  if (parts.length <= 2) return fullName.trim()
-  return `${parts[0]} ${parts[parts.length - 1]}`
+/** Conectivos que nao viram inicial para o nome reduzido nao ficar poluido. */
+const NAME_PARTICLES = new Set(['de', 'da', 'do', 'das', 'dos', 'e'])
+
+/**
+ * Nome reduzido para a transmissao: primeiro nome por extenso e apenas as
+ * iniciais do sobrenome. "Maria Aparecida da Souza" vira "Maria A. S.".
+ */
+export function privacyName(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return ''
+
+  const [first, ...rest] = parts
+  const initials = rest
+    .filter((part) => !NAME_PARTICLES.has(part.toLowerCase()))
+    .map((part) => `${part[0].toUpperCase()}.`)
+
+  return initials.length > 0 ? `${first} ${initials.join(' ')}` : first
 }
