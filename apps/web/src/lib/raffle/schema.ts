@@ -68,6 +68,11 @@ export const listUpdateSchema = z.object({
     .max(10),
 })
 
+/** Esvazia uma lista, removendo todos os inscritos (mantem a lista e os premios). */
+export const listClearSchema = z.object({
+  list_id: z.string().uuid(),
+})
+
 export const participantImportSchema = z.object({
   list_id: z.string().uuid(),
   /** Substitui todos os inscritos da lista em vez de acrescentar. */
