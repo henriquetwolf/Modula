@@ -28,11 +28,13 @@ export function PrizeManager({ lists, prizes, onPrizesChange }: PrizeManagerProp
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [listId, setListId] = useState(lists[0]?.id ?? '')
+  const [quantity, setQuantity] = useState(1)
   const [saving, setSaving] = useState(false)
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
   const [editListId, setEditListId] = useState('')
+  const [editQuantity, setEditQuantity] = useState(1)
 
   function listName(id: string) {
     return lists.find((list) => list.id === id)?.name ?? 'Lista'
@@ -62,12 +64,13 @@ export function PrizeManager({ lists, prizes, onPrizesChange }: PrizeManagerProp
     try {
       const data = await request(
         'POST',
-        { list_id: listId, name: name.trim(), description: description.trim() },
+        { list_id: listId, name: name.trim(), description: description.trim(), quantity },
         'Não foi possível cadastrar'
       )
       if (data) {
         setName('')
         setDescription('')
+        setQuantity(1)
         toast({ title: 'Prêmio cadastrado', type: 'success' })
       }
     } finally {
@@ -92,7 +95,7 @@ export function PrizeManager({ lists, prizes, onPrizesChange }: PrizeManagerProp
     try {
       const data = await request(
         'PATCH',
-        { id: prize.id, name: editName.trim(), list_id: editListId },
+        { id: prize.id, name: editName.trim(), list_id: editListId, quantity: editQuantity },
         'Não foi possível salvar'
       )
       if (data) setEditingId(null)
@@ -128,12 +131,13 @@ export function PrizeManager({ lists, prizes, onPrizesChange }: PrizeManagerProp
     setEditingId(prize.id)
     setEditName(prize.name)
     setEditListId(prize.list_id)
+    setEditQuantity(prize.quantity)
   }
 
   return (
     <div className="space-y-6">
       <div className="rounded-lg border bg-muted/40 p-4">
-        <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
+        <div className="grid gap-4 sm:grid-cols-[1fr_auto_auto]">
           <div className="grid gap-2">
             <Label htmlFor="prize-name">Nome do prêmio</Label>
             <Input
@@ -160,6 +164,18 @@ export function PrizeManager({ lists, prizes, onPrizesChange }: PrizeManagerProp
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="prize-quantity">Unidades</Label>
+            <Input
+              id="prize-quantity"
+              type="number"
+              min={1}
+              max={1000}
+              value={quantity}
+              onChange={(event) => setQuantity(Math.max(1, Number(event.target.value) || 1))}
+              className="sm:w-28"
+            />
           </div>
         </div>
 
@@ -221,6 +237,17 @@ export function PrizeManager({ lists, prizes, onPrizesChange }: PrizeManagerProp
                       ))}
                     </SelectContent>
                   </Select>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={1000}
+                    value={editQuantity}
+                    onChange={(event) =>
+                      setEditQuantity(Math.max(1, Number(event.target.value) || 1))
+                    }
+                    className="h-9 w-20"
+                    aria-label="Unidades"
+                  />
                   <Button
                     size="icon"
                     className="h-9 w-9"
@@ -252,6 +279,12 @@ export function PrizeManager({ lists, prizes, onPrizesChange }: PrizeManagerProp
                   <Badge variant="secondary" className="shrink-0">
                     {listName(prize.list_id)}
                   </Badge>
+
+                  {prize.quantity > 1 && (
+                    <Badge variant="secondary" className="shrink-0">
+                      {prize.quantity} unidades
+                    </Badge>
+                  )}
 
                   {prize.status === 'drawn' && (
                     <Badge variant="success" className="shrink-0">

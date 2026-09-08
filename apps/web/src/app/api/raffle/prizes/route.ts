@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       return jsonError(parsed.error.issues[0]?.message ?? 'Requisição inválida.', 400)
     }
 
-    const { list_id, name, description } = parsed.data
+    const { list_id, name, description, quantity } = parsed.data
     if (!(await listBelongsToTenant(list_id, auth.tenantId))) {
       return jsonError('Lista não encontrada.', 404)
     }
@@ -51,6 +51,7 @@ export async function POST(request: Request) {
       name,
       description: description || null,
       sort_order: nextOrder,
+      quantity,
     })
 
     if (error) return jsonError(error.message, 500)
@@ -74,7 +75,7 @@ export async function PATCH(request: Request) {
       return jsonError(parsed.error.issues[0]?.message ?? 'Requisição inválida.', 400)
     }
 
-    const { id, list_id, name, description, sort_order } = parsed.data
+    const { id, list_id, name, description, sort_order, quantity } = parsed.data
 
     if (list_id && !(await listBelongsToTenant(list_id, auth.tenantId))) {
       return jsonError('Lista não encontrada.', 404)
@@ -85,6 +86,7 @@ export async function PATCH(request: Request) {
     if (name !== undefined) patch.name = name
     if (description !== undefined) patch.description = description || null
     if (sort_order !== undefined) patch.sort_order = sort_order
+    if (quantity !== undefined) patch.quantity = quantity
 
     if (Object.keys(patch).length === 0) {
       return jsonError('Nada para atualizar.', 400)

@@ -132,7 +132,7 @@ export async function listRafflePrizes(tenantId: string): Promise<RafflePrize[]>
   const service = getServiceClient()
   const { data } = await (service as any)
     .from('raffle_prizes')
-    .select('id, list_id, name, description, sort_order, status')
+    .select('id, list_id, name, description, sort_order, status, quantity')
     .eq('tenant_id', tenantId)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true })
@@ -144,6 +144,7 @@ export async function listRafflePrizes(tenantId: string): Promise<RafflePrize[]>
     description: (row.description as string | null) ?? null,
     sort_order: row.sort_order as number,
     status: row.status as RafflePrize['status'],
+    quantity: (row.quantity as number | null) ?? 1,
   }))
 }
 
@@ -220,6 +221,60 @@ export async function drawCandidate(
     full_name: row.full_name as string,
     cpf: row.cpf as string,
   }
+}
+
+/** Escolhe `take` deslocamentos distintos dentro de [0, total). */
+function pickDistinctOffsets(total: number, take: number): number[] {
+  if (take >= total) return Array.from({ length: total }, (_, index) => index)
+
+  const chosen = new Set<number>()
+  while (chosen.size < take) chosen.add(randomInt(total))
+  return [...chosen]
+}
+
+/**
+ * Sorteia ate `count` inscritos elegiveis e distintos da lista do premio, sem
+ * gravar nada. Serve para premios com varias unidades, que revelam todos os
+ * ganhadores de uma vez. A gravacao so acontece na confirmacao.
+ */
+export async function drawCandidates(
+  tenantId: string,
+  listId: string,
+  count: number
+): Promise<RaffleCandidate[]> {
+  if (count <= 0) return []
+
+  const service = getServiceClient()
+  const winnerCpfs = await listWinnerCpfs(tenantId)
+
+  const total = await countParticipants(listId, winnerCpfs)
+  if (total === 0) return []
+
+  const take = Math.min(count, total)
+  const offsets = pickDistinctOffsets(total, take)
+
+  const candidates: RaffleCandidate[] = []
+
+  for (const offset of offsets) {
+    const query = (service as any)
+      .from('raffle_participants')
+      .select('id, full_name, cpf')
+      .eq('list_id', listId)
+      .order('id', { ascending: true })
+      .range(offset, offset)
+
+    const { data } = await excludeWinners(query, winnerCpfs)
+    const row = ((data as Record<string, unknown>[] | null) ?? [])[0]
+    if (row) {
+      candidates.push({
+        participant_id: row.id as string,
+        full_name: row.full_name as string,
+        cpf: row.cpf as string,
+      })
+    }
+  }
+
+  return candidates
 }
 
 /**

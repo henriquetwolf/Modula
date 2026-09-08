@@ -34,6 +34,8 @@ export interface RafflePrize {
   description: string | null
   sort_order: number
   status: RafflePrizeStatus
+  /** Quantas unidades o premio distribui, ou seja, quantos ganhadores tem. */
+  quantity: number
 }
 
 export interface RaffleWinner {
@@ -92,6 +94,7 @@ export const prizeCreateSchema = z.object({
   list_id: z.string().uuid(),
   name: z.string().trim().min(1, 'O prêmio precisa de um nome').max(200),
   description: z.string().trim().max(1000).default(''),
+  quantity: z.number().int().min(1, 'Mínimo de 1 unidade').max(1000, 'Máximo de 1000 unidades').default(1),
 })
 
 export const prizeUpdateSchema = z.object({
@@ -100,6 +103,7 @@ export const prizeUpdateSchema = z.object({
   name: z.string().trim().min(1, 'O prêmio precisa de um nome').max(200).optional(),
   description: z.string().trim().max(1000).optional(),
   sort_order: z.number().int().min(0).max(10000).optional(),
+  quantity: z.number().int().min(1, 'Mínimo de 1 unidade').max(1000, 'Máximo de 1000 unidades').optional(),
 })
 
 export const prizeDeleteSchema = z.object({
@@ -112,7 +116,10 @@ export const drawSchema = z.object({
 
 export const drawConfirmSchema = z.object({
   prize_id: z.string().uuid(),
-  participant_id: z.string().uuid(),
+  participant_ids: z
+    .array(z.string().uuid())
+    .min(1, 'Nenhum ganhador para confirmar.')
+    .max(1000),
 })
 
 export const drawUndoSchema = z.object({

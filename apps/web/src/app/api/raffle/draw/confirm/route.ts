@@ -22,7 +22,9 @@ export async function POST(request: Request) {
       return jsonError(parsed.error.issues[0]?.message ?? 'Requisição inválida.', 400)
     }
 
-    const { prize_id, participant_id } = parsed.data
+    const { prize_id, participant_ids } = parsed.data
+    // Ignora ids repetidos que possam ter vindo da tela
+    const uniqueIds = [...new Set(participant_ids)]
     const service = getServiceClient()
 
     const { data: prize } = await (service as any)
@@ -39,38 +41,50 @@ export async function POST(request: Request) {
       return jsonError('Este prêmio já foi sorteado.', 409)
     }
 
-    // O inscrito precisa ser da lista deste premio
-    const { data: participant } = await (service as any)
+    // Todos os inscritos precisam ser da lista deste premio
+    const { data: participantsRaw } = await (service as any)
       .from('raffle_participants')
       .select('id, full_name, cpf')
-      .eq('id', participant_id)
+      .in('id', uniqueIds)
       .eq('tenant_id', auth.tenantId)
       .eq('list_id', prizeData.list_id)
-      .maybeSingle()
 
-    if (!participant) return jsonError('Inscrito não encontrado nesta lista.', 404)
+    const participants = (participantsRaw as { id: string; full_name: string; cpf: string }[] | null) ?? []
 
-    const participantData = participant as { id: string; full_name: string; cpf: string }
+    if (participants.length !== uniqueIds.length) {
+      return jsonError('Um ou mais inscritos não pertencem a esta lista.', 404)
+    }
 
-    // Uma pessoa so ganha uma vez
+    // Ninguem da leva pode ja ter sido premiado (uma pessoa ganha uma vez)
+    const cpfs = participants.map((participant) => participant.cpf)
     const { data: alreadyWon } = await (service as any)
       .from('raffle_draws')
-      .select('id')
+      .select('cpf')
       .eq('tenant_id', auth.tenantId)
-      .eq('cpf', participantData.cpf)
-      .maybeSingle()
+      .in('cpf', cpfs)
 
-    if (alreadyWon) return jsonError('Esta pessoa já foi premiada.', 409)
+    if (((alreadyWon as { cpf: string }[] | null) ?? []).length > 0) {
+      return jsonError('Uma ou mais pessoas já foram premiadas. Sorteie novamente.', 409)
+    }
 
-    const { error: insertError } = await (service as any).from('raffle_draws').insert({
+    const rows = participants.map((participant) => ({
       tenant_id: auth.tenantId,
       prize_id: prizeData.id,
-      participant_id: participantData.id,
-      full_name: participantData.full_name,
-      cpf: participantData.cpf,
-    })
+      participant_id: participant.id,
+      full_name: participant.full_name,
+      cpf: participant.cpf,
+    }))
 
-    if (insertError) return jsonError(insertError.message, 500)
+    const { error: insertError } = await (service as any).from('raffle_draws').insert(rows)
+
+    // 23505 = corrida em que alguem foi premiado entre a checagem e o insert
+    if (insertError) {
+      const message =
+        insertError.code === '23505'
+          ? 'Uma ou mais pessoas já foram premiadas. Sorteie novamente.'
+          : insertError.message
+      return jsonError(message, insertError.code === '23505' ? 409 : 500)
+    }
 
     const { error: updateError } = await (service as any)
       .from('raffle_prizes')

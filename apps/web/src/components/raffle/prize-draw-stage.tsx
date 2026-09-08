@@ -42,7 +42,7 @@ export function PrizeDrawStage({ prizes, winners, onResult, onExit }: PrizeDrawS
   const [phase, setPhase] = useState<Phase>('idle')
   const [reelName, setReelName] = useState('')
   const [reelTick, setReelTick] = useState(0)
-  const [candidate, setCandidate] = useState<RaffleCandidate | null>(null)
+  const [candidates, setCandidates] = useState<RaffleCandidate[]>([])
   const [confirming, setConfirming] = useState(false)
   const [undoing, setUndoing] = useState(false)
   // Refazer pede uma segunda confirmacao para nao apagar um premiado por engano
@@ -51,7 +51,7 @@ export function PrizeDrawStage({ prizes, winners, onResult, onExit }: PrizeDrawS
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const currentPrize = prizes.find((prize) => prize.id === currentId) ?? null
-  const currentWinner = winners.find((winner) => winner.prize_id === currentId) ?? null
+  const currentWinners = winners.filter((winner) => winner.prize_id === currentId)
   const drawnCount = prizes.filter((prize) => prize.status === 'drawn').length
 
   function clearTimer() {
@@ -66,7 +66,7 @@ export function PrizeDrawStage({ prizes, winners, onResult, onExit }: PrizeDrawS
   // Trocar de premio zera a animacao; premio ja sorteado abre no resultado
   useEffect(() => {
     clearTimer()
-    setCandidate(null)
+    setCandidates([])
     setReelName('')
     setConfirmUndo(false)
     setPhase(currentPrize?.status === 'drawn' ? 'confirmed' : 'idle')
@@ -114,7 +114,7 @@ export function PrizeDrawStage({ prizes, winners, onResult, onExit }: PrizeDrawS
     if (!currentPrize) return
 
     clearTimer()
-    setCandidate(null)
+    setCandidates([])
     setPhase('rolling')
 
     try {
@@ -132,7 +132,7 @@ export function PrizeDrawStage({ prizes, winners, onResult, onExit }: PrizeDrawS
       }
 
       runReel(data.reel ?? [], () => {
-        setCandidate(data.candidate)
+        setCandidates(data.candidates ?? [])
         setPhase('revealed')
       })
     } catch {
@@ -142,14 +142,17 @@ export function PrizeDrawStage({ prizes, winners, onResult, onExit }: PrizeDrawS
   }
 
   async function handleConfirm() {
-    if (!currentPrize || !candidate) return
+    if (!currentPrize || candidates.length === 0) return
 
     setConfirming(true)
     try {
       const res = await fetch('/api/raffle/draw/confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prize_id: currentPrize.id, participant_id: candidate.participant_id }),
+        body: JSON.stringify({
+          prize_id: currentPrize.id,
+          participant_ids: candidates.map((item) => item.participant_id),
+        }),
       })
       const data = await res.json()
 
@@ -216,23 +219,12 @@ export function PrizeDrawStage({ prizes, winners, onResult, onExit }: PrizeDrawS
     []
   )
 
-  const rawName =
-    phase === 'confirmed'
-      ? currentWinner?.full_name ?? candidate?.full_name ?? ''
-      : phase === 'revealed'
-        ? candidate?.full_name ?? ''
-        : reelName
+  // Ganhadores a exibir: os confirmados vem do servidor, os revelados do sorteio
+  // ainda nao gravado. Ambos expoem full_name e cpf.
+  const winnerEntries: { full_name: string; cpf: string }[] =
+    phase === 'confirmed' ? currentWinners : phase === 'revealed' ? candidates : []
 
-  // Na transmissao so aparece o primeiro nome com as iniciais do sobrenome,
-  // inclusive durante o embaralhamento
-  const displayName = privacyName(rawName)
-
-  const displayCpf =
-    phase === 'confirmed'
-      ? currentWinner?.cpf ?? candidate?.cpf
-      : phase === 'revealed'
-        ? candidate?.cpf
-        : null
+  const isMultiReveal = phase !== 'rolling' && winnerEntries.length > 1
 
   const hasNextPending = prizes.some((prize) => prize.status === 'pending' && prize.id !== currentId)
 
@@ -305,6 +297,12 @@ export function PrizeDrawStage({ prizes, winners, onResult, onExit }: PrizeDrawS
               </p>
             )}
 
+            {currentPrize.quantity > 1 && (
+              <p className="mt-2 text-sm font-semibold uppercase tracking-[0.2em] text-teal-300/80">
+                {currentPrize.quantity} unidades
+              </p>
+            )}
+
             {/* Area do resultado */}
             <div className="relative mt-10 flex min-h-[9rem] w-full max-w-5xl items-center justify-center sm:mt-14 sm:min-h-[12rem]">
               {phase === 'idle' ? (
@@ -318,32 +316,57 @@ export function PrizeDrawStage({ prizes, winners, onResult, onExit }: PrizeDrawS
                 </button>
               ) : (
                 <div className="relative w-full">
-                  {phase === 'revealed' && (
+                  {phase === 'revealed' && !isMultiReveal && (
                     <span className="raffle-ring pointer-events-none absolute left-1/2 top-1/2 -z-10 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-teal-300" />
                   )}
                   <span className="raffle-glow pointer-events-none absolute inset-x-0 top-1/2 -z-10 mx-auto h-32 max-w-3xl -translate-y-1/2 rounded-full bg-teal-400/25 blur-3xl" />
 
-                  <p
-                    key={phase === 'rolling' ? reelTick : displayName}
-                    className={cn(
-                      'text-balance break-words px-4 text-4xl font-bold leading-tight sm:text-6xl lg:text-7xl',
-                      phase === 'rolling' && 'raffle-shuffle text-teal-100/60',
-                      phase !== 'rolling' && 'raffle-reveal text-white'
-                    )}
-                  >
-                    {displayName || '\u00A0'}
-                  </p>
+                  {isMultiReveal ? (
+                    // Varios ganhadores revelados de uma vez: grade de nomes
+                    <div className="raffle-reveal mx-auto grid w-full max-w-5xl grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                      {winnerEntries.map((entry) => (
+                        <div
+                          key={entry.cpf}
+                          className="rounded-xl border border-white/15 bg-white/5 px-3 py-3 text-center"
+                        >
+                          <p className="truncate text-lg font-bold leading-tight sm:text-xl">
+                            {privacyName(entry.full_name)}
+                          </p>
+                          <p className="mt-1 font-mono text-[0.7rem] tracking-widest text-teal-200/70">
+                            {maskCpf(entry.cpf)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <>
+                      <p
+                        key={phase === 'rolling' ? reelTick : winnerEntries[0]?.full_name ?? ''}
+                        className={cn(
+                          'text-balance break-words px-4 text-4xl font-bold leading-tight sm:text-6xl lg:text-7xl',
+                          phase === 'rolling' && 'raffle-shuffle text-teal-100/60',
+                          phase !== 'rolling' && 'raffle-reveal text-white'
+                        )}
+                      >
+                        {(phase === 'rolling'
+                          ? privacyName(reelName)
+                          : privacyName(winnerEntries[0]?.full_name ?? '')) || '\u00A0'}
+                      </p>
 
-                  {displayCpf && phase !== 'rolling' && (
-                    <p className="mt-4 font-mono text-lg tracking-widest text-teal-200/70 sm:text-xl">
-                      {maskCpf(displayCpf)}
-                    </p>
+                      {phase !== 'rolling' && winnerEntries[0]?.cpf && (
+                        <p className="mt-4 font-mono text-lg tracking-widest text-teal-200/70 sm:text-xl">
+                          {maskCpf(winnerEntries[0].cpf)}
+                        </p>
+                      )}
+                    </>
                   )}
 
                   {phase === 'confirmed' && (
                     <p className="mt-5 inline-flex items-center gap-2 rounded-full bg-teal-400/15 px-5 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-teal-200">
                       <Trophy className="h-4 w-4" />
-                      Premiado confirmado
+                      {winnerEntries.length > 1
+                        ? `${winnerEntries.length} premiados confirmados`
+                        : 'Premiado confirmado'}
                     </p>
                   )}
                 </div>
@@ -372,7 +395,7 @@ export function PrizeDrawStage({ prizes, winners, onResult, onExit }: PrizeDrawS
                     ) : (
                       <Check className="h-5 w-5" />
                     )}
-                    Confirmar
+                    {candidates.length > 1 ? `Confirmar ${candidates.length} ganhadores` : 'Confirmar'}
                   </button>
                   <button
                     type="button"
